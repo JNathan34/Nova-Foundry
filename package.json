@@ -2,11 +2,11 @@
   "dependencies": {
     "three": "0.185.1"
   },
-  "name": "nova-foundry-3d",
-  "version": "2.0.0",
+  "name": "nova-foundry-overlook",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Offline-first 3D reactor incremental game",
+  "description": "Offline bird\u2019s-eye point-and-click reactor incremental game",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --target=es2020 --minify --outfile=assets/game.js"
   },

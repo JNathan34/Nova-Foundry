@@ -10,7 +10,6 @@ try{
  const world=new World(state,document.getElementById('world'));
  const activities=new Activities(state,world),ui=new UI(state,world,activities),audio=new AudioSystem(state,world);
  world.paused=true;
- if(world.allowed(saved.x,saved.z)){world.player.set(saved.x,Math.max(0,saved.y),saved.z);world.yaw=saved.yaw;world.pitch=saved.pitch;}
  document.documentElement.style.setProperty('--accent',state.s.settings.accent);document.body.classList.toggle('reduced',state.s.settings.reduced);
  if(new URLSearchParams(location.search).has('qa'))window.__NOVA={state,world,activities,ui,nodes:NODES,areas:AREAS};
  let last=performance.now(),acc=0,saveClock=0,calendarClock=0,hidden=false;

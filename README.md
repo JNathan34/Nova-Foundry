@@ -1,60 +1,27 @@
-# Nova Foundry 3D — Origin Protocol v2.0
+# Nova Foundry — Overlook v3
+
+A bird’s-eye, point-and-click edition of Nova Foundry, with a tidy garden campus inspired by the supplied farm reference. Built with original procedural 3D scenery.
 
 ## Play
 
-Extract the entire ZIP, then open **index.html** in Chrome, Edge or Firefox.
-Keep the `assets` folder beside it. No install, server, account or internet connection is needed to play. The browser must support WebGL 2 with graphics acceleration enabled.
+Extract the entire ZIP, then open `index.html` in a modern desktop browser with WebGL enabled. Keep `assets` alongside it. No installation, account, internet connection or build step is required. Touch layouts are included; a desktop browser is the easiest way to open the downloaded game.
 
-Click **Enter the facility**, then click the world to capture the mouse. If mouse capture is unavailable, hold the right mouse button to look around.
+## Controls
 
-| Control | Action |
-|---|---|
-| WASD | Move |
-| Mouse | Look |
-| Shift | Sprint |
-| Space | Jump |
-| C | Crouch |
-| E / left click | Interact with the object you are aiming at |
-| T | Skill tree |
-| Tab | Command menu |
-| M | Facility map |
-| V | First-person / third-person camera |
-| Esc | Release mouse / close menu |
+- Click or tap the reactor to earn energy, and buildings, machines, people or shards to interact.
+- Drag empty ground to pan. Scroll or pinch to zoom; the on-screen +/− buttons also work.
+- Origin returns to your starting plot. All plots shows the campus. Use the Map menu to focus an unlocked plot.
+- Arrow keys pan, Home returns to Origin, T opens Skills, M opens Map, and Tab opens the menu.
+- In Skills, choose one branch at a time, drag to explore it and select a node to read its requirements and buy upgrades.
 
-Touch controls are included. Desktop is the primary play experience.
+## What changed
 
-## Your first few minutes
+The walking camera has been replaced with a fixed overhead camera. The lighter interface uses larger text, clearer contrast and fewer simultaneous controls. Paths and buildings organize each plot. Minigames now use direct clicks or a pointer-controlled tray; Reactor Relay replaces the walking obstacle course. The progression systems, 134 skill nodes, machines, ten sectors, missions, achievements and prestige layers are retained.
 
-1. Walk toward the reactor and press E to generate energy.
-2. Open the skill tree with T. Spend your starting Skill Point on **Basic automation**, or choose a manual-energy path and earn another point by levelling up.
-3. Approach the Energy collector to the reactor's right. Press E and build it for 20 energy.
-4. Buy **Facility expansion** in Exploration and earn 250 energy this run. The Generator Hall door opens automatically.
-5. Unlock **Offline production** to earn energy while away. Explore for shards and talk to the Chief Engineer.
+## Saving and existing progress
 
-## Included systems
+Progress autosaves every five seconds in the browser. Use Settings → Export to keep a portable backup. To move progress from the previous 3D edition, export there and import here through Settings. The v2 save format is supported; camera settings use the new overhead view. Classic v1 imports retain transferable currency and XP. Browser storage availability depends on the browser and file location, so use an exported backup when moving the game.
 
-- A walkable 3D campus with ten progressively unlocked sectors, physical machines, opening doors, NPCs, world shards and secrets.
-- 134 data-driven nodes: 102 main-tree nodes across six branches and cross-branch links, 12 Quantum nodes, eight Ascension nodes, and 12 repeatable Mastery nodes.
-- Pan/zoom skill trees, prerequisites, multi-level research, keystones and respecs.
-- Four physical minigame chambers: target range, stabilisation, energy catch and parkour. A separate boss chamber has seven named tiers and scaling beyond them.
-- 79 achievements, NPC assignments, daily/weekly missions, daily rewards, drones with duplicate fusion, reactor and character appearances, timed research and facility infrastructure.
-- Rebirth, Ascension, New Reality, random world events, challenges, offline earnings, save export/import and statistics.
-- Procedural geometry and synthesized audio. All runtime assets are included locally.
+## Source and build
 
-The world uses compact connected sectors and arcade arenas, including orbital, alien and dimensional settings. It is a playable foundation, rather than a finished commercial game with expansive planets, handcrafted assets or a campaign. Long-term economy balance has not been tested over hundreds of hours. Motion blur is intentionally omitted; anti-aliasing is enabled.
-
-## Saves and moving from v1
-
-Progress automatically saves in this browser every five seconds. Use **Menu → Settings → Export** for a portable JSON backup. Moving the game folder or clearing browser data can make a browser-local save unavailable.
-
-**Import** accepts v2 saves and Classic Nova Foundry v1 JSON exports. Classic currency, XP, rebirth/ascension counts and the first generator transfer; the 3D skill system and world begin fresh, with Skill Points awarded for transferred XP and rebirths. Other classic cosmetics and minigame history are not mapped.
-
-Offline production requires its skill node, begins at 25%, and can reach 100% with up to 48 hours of storage. Temporary boosts do not increase offline payouts. Main skills survive rebirth and ascension; reset confirmations list what is lost. The first main-tree respec is free; later respecs cost 25 stardust.
-
-## Source and rebuilding
-
-Source systems live in `src/`: data, state/economy/saves, world/player/camera, activities, UI, audio, and the main loop. The ready-to-play bundle is `assets/game.js`.
-
-Developers can install the pinned dependencies with `npm ci`, then run `npm run build`. Node/npm are only needed for rebuilding, never for playing.
-
-Third-party code: Three.js, MIT licence; licence text included in `THIRD-PARTY-LICENSES.txt`. The build tool is esbuild, MIT licence.
+`src/` contains the seven source modules. `assets/game.js` is the ready-to-play bundled build. For development, install Node.js and run `npm ci`, then `npm run build` from this folder. Dependency licenses are in `THIRD-PARTY-LICENSES.txt`.
