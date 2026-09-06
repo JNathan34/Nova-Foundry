@@ -1,12 +1,4 @@
-(() => {
-  const nova = window.__NOVA;
-  if (!nova) {
-    console.error('Nova Foundry redesign could not attach: runtime handle unavailable.');
-    return;
-  }
-
-
-function applyRedesign(nova) {
+export function applyRedesign(nova) {
   if (!nova || window.__NOVA_REDESIGN_APPLIED__) return;
   window.__NOVA_REDESIGN_APPLIED__ = true;
 
@@ -681,6 +673,3 @@ function applyRedesign(nova) {
   if (ui.opened) ui.render();
 }
 
-
-  applyRedesign(nova);
-})();

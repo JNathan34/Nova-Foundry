@@ -1,301 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width,initial-scale=1" name="viewport"/>
-  <meta content="#f4f5ea" name="theme-color"/>
-  <title>
-   Nova Foundry · Overlook
-  </title>
-  <link href="assets/style.css" rel="stylesheet"/>
- </head>
- <body>
-  <canvas aria-label="Bird’s-eye view of your energy foundry. Click buildings to manage them." id="world">
-  </canvas>
-  <div aria-hidden="true" id="vignette">
-  </div>
-  <div id="hud">
-   <header class="hud-top">
-    <div class="brand-block">
-     <span class="brand-icon">
-      ✳
-     </span>
-     <div>
-      <strong>
-       NOVA FOUNDRY
-      </strong>
-      <small>
-       OVERLOOK EDITION
-      </small>
-     </div>
-    </div>
-    <div class="readout">
-     <div class="eyebrow">
-      ENERGY
-     </div>
-     <div class="energy">
-      <span id="energy">
-       0
-      </span>
-      <small>
-       ϟ
-      </small>
-     </div>
-    </div>
-    <div class="production-box">
-     <span class="eyebrow">
-      PER SECOND
-     </span>
-     <strong id="production">
-      0
-     </strong>
-    </div>
-    <div class="player-panel">
-     <div class="row between">
-      <span id="playerLevel">
-       LEVEL 1
-      </span>
-      <span>
-       <b id="points">
-        1
-       </b>
-       <span class="point-label">
-        skill points
-       </span>
-      </span>
-     </div>
-     <div class="thin-bar">
-      <i id="xpBar">
-      </i>
-     </div>
-    </div>
-    <button aria-label="Settings" class="settings-button" data-action="open" data-page="settings">
-     ⚙
-    </button>
-   </header>
-   <aside class="map-dock">
-    <div class="dock-label">
-     YOUR FOUNDRY
-    </div>
-    <button data-action="open" data-page="tree">
-     <span>
-      ✧
-     </span>
-     Skill tree
-     <i class="dot">
-     </i>
-    </button>
-    <button data-action="open" data-page="control">
-     <span>
-      ▦
-     </span>
-     Machines
-    </button>
-    <button data-action="open" data-page="missions">
-     <span>
-      ☷
-     </span>
-     Missions
-    </button>
-    <button data-action="open" data-page="collection">
-     <span>
-      ◇
-     </span>
-     Collection
-    </button>
-    <button data-action="open" data-page="arcade">
-     <span>
-      ⊞
-     </span>
-     Minigames
-    </button>
-    <button data-action="open" data-page="overview">
-     <span>
-      •••
-     </span>
-     More
-    </button>
-    <div class="dock-resources">
-     <div>
-      <span>
-       Stardust
-      </span>
-      <strong id="dust">
-       0
-      </strong>
-     </div>
-     <div>
-      <span>
-       Quantum cores
-      </span>
-      <strong id="cores">
-       0
-      </strong>
-     </div>
-    </div>
-   </aside>
-   <div class="objective">
-    <div class="eyebrow" id="objectiveLabel">
-     YOUR FIRST SPARK
-    </div>
-    <div id="objectiveText">
-     Click the energy core to get started.
-    </div>
-    <div class="thin-bar">
-     <i id="objectiveBar">
-     </i>
-    </div>
-   </div>
-   <div id="boosts">
-   </div>
-   <div class="area-name">
-    <span id="areaLabel">
-     Origin Laboratory
-    </span>
-    <small id="combo">
-     1.0× pulse
-    </small>
-   </div>
-   <canvas aria-label="Facility minimap" height="110" id="minimap" width="190">
-   </canvas>
-   <div aria-hidden="true" id="reticle">
-   </div>
-   <div id="interaction">
-    <div>
-     <strong id="interactLabel">
-      Energy core
-     </strong>
-     <small id="interactSub">
-      Click to generate energy
-     </small>
-    </div>
-   </div>
-   <div class="hidden" id="activityHud">
-   </div>
-   <div class="hidden" id="eventHud">
-   </div>
-   <footer class="hud-bottom">
-    <span class="map-help">
-     Click to interact
-     <span>
-      ·
-     </span>
-     Drag to pan
-     <span>
-      ·
-     </span>
-     Scroll to zoom
-    </span>
-    <div class="hotbar">
-     <button data-action="maphome">
-      ⌂
-      <span>
-       Origin
-      </span>
-     </button>
-     <button data-action="mapoverview">
-      ▦
-      <span>
-       All plots
-      </span>
-     </button>
-     <button aria-label="Zoom out" data-action="mapzoom" data-dir="-1">
-      −
-     </button>
-     <button aria-label="Zoom in" data-action="mapzoom" data-dir="1">
-      +
-     </button>
-    </div>
-    <button class="hidden" data-action="return" id="leaveGame">
-     Leave minigame
-    </button>
-   </footer>
-   <div hidden="" id="touchControls">
-    <div id="stick">
-     <div id="stickKnob">
-     </div>
-    </div>
-    <button id="touchJump">
-    </button>
-    <button id="touchInteract">
-    </button>
-   </div>
-  </div>
-  <div class="hidden" id="menu">
-   <div class="menu-shell">
-    <header class="menu-header">
-     <div>
-      <div class="eyebrow">
-       NOVA FOUNDRY
-      </div>
-      <h1 id="menuTitle">
-       Your foundry
-      </h1>
-     </div>
-     <div class="row">
-      <span class="balance" id="menuBalance">
-      </span>
-      <button aria-label="Close menu" class="close-button" data-action="close">
-       ×
-      </button>
-     </div>
-    </header>
-    <nav id="menuNav">
-    </nav>
-    <section id="menuContent">
-    </section>
-   </div>
-  </div>
-  <dialog id="dialog">
-   <div id="dialogBody">
-   </div>
-  </dialog>
-  <div aria-live="polite" id="toasts">
-  </div>
-  <div id="floaters">
-  </div>
-  <div class="hidden" id="transition">
-   <div class="eyebrow">
-    QUANTUM REBIRTH
-   </div>
-   <h1 id="transitionText">
-    A new beginning.
-   </h1>
-   <div class="transition-ring">
-   </div>
-  </div>
-  <div id="welcome">
-   <div class="welcome-card">
-    <div class="eyebrow">
-     NOVA FOUNDRY / OVERLOOK
-    </div>
-    <h1>
-     A little energy.
-     <br/>
-     A world of possibilities.
-    </h1>
-    <p>
-     A clearer view of everything you’re building.
-     <br/>
-     Click your core. Grow your foundry. Choose your path.
-    </p>
-    <button class="primary large" id="enter">
-     Open your foundry
-     <span>
-      →
-     </span>
-    </button>
-    <div class="welcome-help">
-     Click buildings to manage them.
-     <br/>
-     Drag the map to pan. Scroll or pinch to zoom.
-    </div>
-    <div id="loadNote">
-    </div>
-   </div>
-  </div>
-  <script src="assets/game.js">
-  </script>
- </body>
-</html>
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width,initial-scale=1" name="viewport">
+  <meta content="#121613" name="theme-color">
+  <title>Nova Foundry · Overlook</title>
+  <link href="assets/style.css" rel="stylesheet">
+</head>
+<body class="department-redesign">
+  <canvas aria-label="Bird’s-eye view of your energy foundry. Click buildings to manage their departments." id="world"></canvas>
+  <div aria-hidden="true" id="vignette"></div>
 
+  <div id="hud">
+    <header class="hud-top">
+      <div class="foundry-mark" aria-label="Foundry level">
+        <span>NOVA FOUNDRY</span>
+        <strong id="playerLevel">LEVEL 1</strong>
+        <div class="thin-bar"><i id="xpBar"></i></div>
+        <span class="hidden" id="points">1</span>
+      </div>
+
+      <div class="resource-strip" aria-label="Foundry resources">
+        <div>
+          <span>ENERGY</span>
+          <strong id="energy">0</strong>
+        </div>
+        <div class="production-resource">
+          <span>PRODUCTION</span>
+          <strong><b id="production">0</b><small>/s</small></strong>
+        </div>
+        <div>
+          <span>STARDUST</span>
+          <strong id="dust">0</strong>
+        </div>
+        <div>
+          <span>QUANTUM CORES</span>
+          <strong id="cores">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="objective" aria-live="polite">
+      <div class="eyebrow" id="objectiveLabel">YOUR FIRST SPARK</div>
+      <div id="objectiveText">Click the energy core to get started.</div>
+      <div class="thin-bar"><i id="objectiveBar"></i></div>
+    </div>
+
+    <div id="boosts"></div>
+
+    <div class="area-name" aria-hidden="true">
+      <span id="areaLabel">Origin Laboratory</span>
+      <small id="combo">1.0× pulse</small>
+    </div>
+
+    <canvas aria-label="Facility minimap" height="110" id="minimap" width="190"></canvas>
+    <div aria-hidden="true" id="reticle"></div>
+
+    <div id="interaction" role="status">
+      <div>
+        <strong id="interactLabel">Energy core</strong>
+        <small id="interactSub">Click to generate energy</small>
+      </div>
+    </div>
+
+    <div id="worldLabels" aria-hidden="true"></div>
+    <div class="hidden" id="activityHud"></div>
+    <div class="hidden" id="eventHud"></div>
+
+    <footer class="hud-bottom">
+      <span class="map-help">Drag to pan <span>·</span> Scroll to zoom <span>·</span> Hold ALT for status</span>
+      <button class="hidden" data-action="return" id="leaveGame">Leave minigame</button>
+    </footer>
+
+    <div hidden id="touchControls">
+      <div id="stick"><div id="stickKnob"></div></div>
+      <button id="touchJump"></button>
+      <button id="touchInteract"></button>
+    </div>
+  </div>
+
+  <div class="hidden" id="menu">
+    <div class="menu-shell">
+      <header class="menu-header">
+        <div>
+          <div class="eyebrow">FOUNDRY DEPARTMENT</div>
+          <h1 id="menuTitle">Department</h1>
+        </div>
+        <div class="row">
+          <span class="balance" id="menuBalance"></span>
+          <button aria-label="Close department" class="close-button" data-action="close">×</button>
+        </div>
+      </header>
+      <nav id="menuNav" aria-hidden="true"></nav>
+      <section id="menuContent"></section>
+    </div>
+  </div>
+
+  <dialog id="dialog"><div id="dialogBody"></div></dialog>
+  <div aria-live="polite" id="toasts"></div>
+  <div id="floaters"></div>
+
+  <div class="hidden" id="transition">
+    <div class="eyebrow">QUANTUM REBIRTH</div>
+    <h1 id="transitionText">A new beginning.</h1>
+    <div class="transition-ring"></div>
+  </div>
+
+  <div id="welcome">
+    <div class="welcome-card">
+      <div class="eyebrow">NOVA FOUNDRY / OVERLOOK</div>
+      <h1>Your foundry is the interface.</h1>
+      <p>Click departments in the world to manage production, upgrades, missions, research and more.</p>
+      <button class="primary large" id="enter">Enter the foundry <span>→</span></button>
+      <div class="welcome-help">
+        Hover a building to identify it.<br>
+        Drag to pan. Scroll or pinch to zoom. Press Esc to close a department.
+      </div>
+      <div id="loadNote"></div>
+    </div>
+  </div>
+
+  <script src="assets/game.js"></script>
+  <script src="assets/redesign.js"></script>
+</body>
+</html>

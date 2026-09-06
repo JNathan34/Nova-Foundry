@@ -4,6 +4,7 @@ import { Activities } from './activities.js';
 import { UI } from './ui.js';
 import { AudioSystem } from './audio.js';
 import { NODES, AREAS } from './data.js';
+import { applyRedesign } from './redesign.js';
 
 function fail(error) {
   console.error(error);
@@ -39,16 +40,16 @@ try {
   document.documentElement.style.setProperty('--accent', state.s.settings.accent);
   document.body.classList.toggle('reduced', state.s.settings.reduced);
 
-  if (new URLSearchParams(location.search).has('qa')) {
-    window.__NOVA = {
-      state,
-      world,
-      activities,
-      ui,
-      nodes: NODES,
-      areas: AREAS,
-    };
-  }
+  window.__NOVA = {
+    state,
+    world,
+    activities,
+    ui,
+    nodes: NODES,
+    areas: AREAS,
+  };
+
+  applyRedesign(window.__NOVA);
 
   let last = performance.now();
   let accumulator = 0;

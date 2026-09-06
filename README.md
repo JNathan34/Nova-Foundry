@@ -8,29 +8,33 @@ Extract the entire ZIP, then open `index.html` in a modern desktop browser with 
 
 ## Controls
 
-- Click or tap the reactor to earn energy, and buildings, machines, people or shards to interact.
-- Drag empty ground to pan. Scroll or pinch to zoom; the on-screen +/− buttons also work.
-- Origin returns to your starting plot. All plots shows the campus. Use the Map menu to focus an unlocked plot.
-- Arrow keys pan, Home returns to Origin, T opens Skills, M opens Map, and Tab opens the menu.
-- In Skills, choose one branch at a time, drag to explore it and select a node to read its requirements and buy upgrades.
+- Click or tap the reactor to earn energy. Click a department building to open that system.
+- Drag empty ground to pan. Scroll or pinch to zoom.
+- Arrow keys pan and Home returns to the Origin core.
+- Hold Alt to reveal extra status text above department buildings.
+- Esc closes the active department.
+- In the Upgrade Lab, drag the skill tree to explore it and select nodes to inspect or buy upgrades.
 
 ## What changed
 
-The walking camera has been replaced with a fixed overhead camera. The lighter interface uses larger text, clearer contrast and fewer simultaneous controls. Paths and buildings organize each plot. Minigames now use direct clicks or a pointer-controlled tray; Reactor Relay replaces the walking obstacle course. The progression systems, 134 skill nodes, machines, ten sectors, missions, achievements and prestige layers are retained.
+The permanent system sidebar has been removed. The foundry itself is now the navigation layer: Upgrade Lab, Machine Hall, Mission Control, Foundry Archive, Arcade, Research Centre, Worker Office, Warehouse, Marketplace, Treasury, Quantum Facility and Administration each open their own department interface. The persistent HUD is limited to foundry level and core resources, while department panels use a dark management-game visual language and keep the world visible behind them.
+
+The fixed overhead camera, minigames, progression systems, 134 skill nodes, machines, ten sectors, missions, achievements, saving and prestige layers are retained.
 
 ## Saving and existing progress
 
-Progress autosaves every five seconds in the browser. Use Settings → Export to keep a portable backup. To move progress from the previous 3D edition, export there and import here through Settings. The v2 save format is supported; camera settings use the new overhead view. Classic v1 imports retain transferable currency and XP. Browser storage availability depends on the browser and file location, so use an exported backup when moving the game.
+Progress autosaves every five seconds in the browser. Use Administration → Settings → Export to keep a portable backup. To move progress from the previous 3D edition, export there and import here through Administration → Settings. The v2 save format is supported; camera settings use the new overhead view. Classic v1 imports retain transferable currency and XP. Browser storage availability depends on the browser and file location, so use an exported backup when moving the game.
 
 ## Project layout
 
 - `index.html` — offline game entry point.
 - `assets/style.css` — game styling.
 - `assets/game.js` — prebuilt browser bundle used by `index.html`.
-- `src/` — maintainable source modules used to produce the bundle.
+- `assets/redesign.js` — runtime department/building navigation layer for the prebuilt bundle.
+- `src/` — maintainable source modules used to produce the bundle, including `redesign.js`.
 - `package.json` / `package-lock.json` — reproducible development dependencies.
 - `THIRD-PARTY-LICENSES.txt` — dependency license notices.
 
 ## Source and build
 
-`src/` contains the seven source modules. `assets/game.js` is the ready-to-play bundled build. For development, install Node.js and run `npm ci`, then `npm run build` from this folder. Dependency licenses are in `THIRD-PARTY-LICENSES.txt`.
+`src/` contains the source modules, including the building-navigation redesign layer. `assets/game.js` is the ready-to-play bundled build. For development, install Node.js and run `npm ci`, then `npm run build` from this folder. Dependency licenses are in `THIRD-PARTY-LICENSES.txt`.
