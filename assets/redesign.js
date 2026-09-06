@@ -1816,25 +1816,62 @@ function applyRedesign(nova) {
 
   function resetProgression(){
     const keptSettings={...state.s.settings};
+
+    // Remove every progression save before creating the replacement state.
+    // The previous implementation called state.validate() with only settings,
+    // which always throws because validate() requires a complete versioned save.
     try{localStorage.removeItem(V5_SAVE_KEY);}catch{}
     try{localStorage.removeItem('nova-foundry-3d-v2');}catch{}
-    const fresh=state.validate({settings:keptSettings});
+    try{localStorage.removeItem('nova-foundry-3d-v2-backup');}catch{}
+
+    // Construct a genuinely fresh State after the persisted saves are gone.
+    // Copy only the generated fresh data back onto the live State instance so
+    // existing UI/world/audio listeners keep their references.
+    const FreshState=state.constructor;
+    const freshState=new FreshState();
+    const fresh=freshState.s;
+    fresh.settings={...fresh.settings,...keptSettings};
     fresh.expansion=freshExpansion();
+
     state.s=fresh;
     ex=state.s.expansion;
     normalizeExpansion();
+
+    // Clear transient runtime values that are not part of the save payload.
+    state.fx={};
+    state.combo=0;
+    state.lastClick=0;
+    state.lastProductionRoll=0;
+    state.lastMining=0;
     state.storageFailed=false;
     state.resetting=false;
+
+    state.calendar();
     state.recompute();
     applyUiSettings();
     state.emit('audio-settings');
     state.emit('change');
     state.emit('world');
+
+    // Force all plot/building visibility and tutorial state back to the true
+    // new-game presentation immediately, without requiring a reload.
+    lastTutorialKey='';
+    completeJobs();
+    updateWorldVisuals(.4);
+    renderTutorial(true);
     if(typeof world.sync==='function')world.sync();
     if(typeof ui.close==='function')ui.close();
     if(typeof ui.render==='function')ui.render();
     if(typeof ui.paint==='function')ui.paint();
+
+    world.goal.set(0,0,2.0);
+    world.target.copy(world.goal);
+    world.goalSize=25;
+    world.size=25;
+    world.frame();
     world.paused=false;
+
+    // Persist the fresh state only after the reset is fully complete.
     state.save();
   }
 
