@@ -1,8 +1,8 @@
 {
   "name": "nova-foundry-overlook",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "private": true,
-  "description": "Offline bird’s-eye foundry management game with purchasable land, facility progression, and world-based navigation",
+  "description": "Offline bird’s-eye foundry management game with Energy currency, spaced land plots, facility progression, resettable saves, and world-based navigation",
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --target=es2020 --minify --outfile=assets/game.js"

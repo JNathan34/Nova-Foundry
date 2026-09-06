@@ -2396,3 +2396,100 @@ body.tutorial-large .tutorial-panel p{font-size:18px}
 @media(max-width:620px){
   .rebirth-clarity{grid-template-columns:1fr}
 }
+
+
+
+/* v5.1 polish overrides */
+*, *::before, *::after{box-sizing:border-box}
+dialog, #dialog{overflow:hidden;max-width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{backdrop-filter:blur(2px)}
+#menuContent{
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+#menuContent::-webkit-scrollbar{width:0;height:0;display:none}
+.land-purchase-panel{
+  width:min(560px,calc(100vw - 52px));
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+}
+.land-purchase-panel, .land-purchase-panel *{min-width:0}
+.land-facts{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.land-requirements,
+.land-unlocks{max-width:100%;overflow-wrap:anywhere}
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.actions > *{max-width:100%}
+.settings-footer{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.settings-footer .quiet-danger{
+  min-width:200px;
+}
+.plot-label{
+  transform:translateY(-2px);
+}
+.world-label, .plot-label, .building-label{
+  max-width:240px;
+}
+body.land-foundry .hud-top{
+  padding-right:18px;
+}
+
+
+/* v5.1 polish: land dialogs stay inside the viewport with no visible scrollbars. */
+#dialog,
+#dialogBody,
+.land-purchase-panel{
+  max-width:100%;
+  min-width:0;
+}
+#dialog{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+#dialogBody{
+  overflow:visible;
+}
+.land-purchase-panel{
+  width:100%;
+  overflow:hidden;
+}
+.land-purchase-panel .actions{
+  width:100%;
+  min-width:0;
+  flex-wrap:wrap;
+}
+.land-purchase-panel .actions button{
+  min-width:0;
+  max-width:100%;
+  white-space:normal;
+}
+#menuContent{
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+#menuContent::-webkit-scrollbar,
+#dialog::-webkit-scrollbar,
+#dialogBody::-webkit-scrollbar,
+.land-purchase-panel::-webkit-scrollbar{
+  width:0;
+  height:0;
+  display:none;
+}

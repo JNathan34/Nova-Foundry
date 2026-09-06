@@ -129,66 +129,66 @@ export function applyRedesign(nova) {
     {
       id:'factory', page:'control', name:'MACHINE HALL', starterName:'MACHINE WORKSHOP',
       subtitle:'Production', tooltip:'Manage production', kind:'factory',
-      x:0, z:5.4, accent:'#d79a53', ground:'#9fb67f', landCost:0, buildCost:0, level:1,
+      x:0.0, z:6.6, accent:'#d79a53', ground:'#9fb67f', landCost:0, buildCost:0, level:1,
       starter:true, priority:0
     },
     {
       id:'upgrade', page:'tree', name:'UPGRADE LAB', subtitle:'Global engineering',
-      tooltip:'Improve the whole foundry', kind:'upgrade', x:-8.4, z:1.8,
+      tooltip:'Improve the whole foundry', kind:'upgrade', x:-13.4, z:0.2,
       accent:'#57b9b3', ground:'#95b398', landCost:75, buildCost:0, level:1,
       autoBuild:true, parent:'factory', priority:1
     },
     {
       id:'mission', page:'missions', name:'MISSION CONTROL', subtitle:'Objectives',
-      tooltip:'Review contracts and objectives', kind:'mission', x:7.7, z:4.1,
+      tooltip:'Review contracts and objectives', kind:'mission', x:13.2, z:4.4,
       accent:'#d8814f', ground:'#a7b17d', landCost:350, buildCost:0, level:2,
       autoBuild:true, parent:'upgrade', requires:['upgrade'], priority:2
     },
     {
       id:'warehouse', page:'warehouse', name:'WAREHOUSE', subtitle:'Logistics',
-      tooltip:'Manage storage and reserves', kind:'warehouse', x:-9.7, z:10.2,
+      tooltip:'Manage storage and reserves', kind:'warehouse', x:-16.4, z:15.2,
       accent:'#89989c', ground:'#9fa58e', landCost:3500, buildCost:1400, level:4,
       parent:'mission', requires:['mission'], priority:3
     },
     {
       id:'workers', page:'workers', name:'WORKER OFFICE', subtitle:'Personnel',
-      tooltip:'Manage staff and assignments', kind:'workers', x:9.6, z:10.3,
+      tooltip:'Manage staff and assignments', kind:'workers', x:16.0, z:15.0,
       accent:'#d8b75d', ground:'#aeb18b', landCost:3000, buildCost:1200, level:4,
       parent:'mission', requires:['mission'], priority:4
     },
     {
       id:'research', page:'research', name:'RESEARCH CENTRE', subtitle:'Technology',
-      tooltip:'Run research projects', kind:'research', x:-10.8, z:-7.2,
+      tooltip:'Run research projects', kind:'research', x:-17.2, z:-12.8,
       accent:'#668fc8', ground:'#8fab9c', landCost:10000, buildCost:4500, level:7,
       parent:'upgrade', anyOf:['warehouse','workers'], priority:5
     },
     {
       id:'market', page:'market', name:'MARKETPLACE', subtitle:'Trading',
-      tooltip:'Trade resources and equipment', kind:'market', x:12.2, z:-6.6,
+      tooltip:'Trade resources and equipment', kind:'market', x:19.2, z:-11.8,
       accent:'#69a990', ground:'#99b08d', landCost:22000, buildCost:9000, level:9,
       parent:'factory', requires:['warehouse'], priority:6
     },
     {
       id:'archive', page:'collection', name:'FOUNDRY ARCHIVE', subtitle:'Discoveries',
-      tooltip:'Browse recovered discoveries', kind:'archive', x:-15.3, z:2.6,
+      tooltip:'Browse recovered discoveries', kind:'archive', x:-24.0, z:3.0,
       accent:'#6ea77c', ground:'#9eae89', landCost:48000, buildCost:17000, level:12,
       parent:'warehouse', requires:['research'], priority:7
     },
     {
       id:'arcade', page:'arcade', name:'ARCADE', subtitle:'Side activities',
-      tooltip:'Play foundry minigames', kind:'arcade', x:4.8, z:15.7,
+      tooltip:'Play foundry minigames', kind:'arcade', x:7.8, z:24.0,
       accent:'#a071c5', ground:'#a1a47f', landCost:55000, buildCost:18000, level:13,
       parent:'workers', requires:['workers'], priority:8
     },
     {
       id:'treasury', page:'treasury', name:'TREASURY', subtitle:'Advanced finances',
-      tooltip:'Review foundry performance', kind:'treasury', x:16.0, z:3.2,
+      tooltip:'Review foundry performance', kind:'treasury', x:25.0, z:4.0,
       accent:'#caa45b', ground:'#a8aa85', landCost:95000, buildCost:32000, level:16,
       parent:'market', requires:['market'], priority:9
     },
     {
       id:'quantum', page:'rebirth', name:'QUANTUM FACILITY', subtitle:'Prestige',
-      tooltip:'Manage rebirth progression', kind:'quantum', x:0.2, z:-16.2,
+      tooltip:'Manage rebirth progression', kind:'quantum', x:0.0, z:-25.8,
       accent:'#9b73d0', ground:'#8f9a8d', landCost:250000, buildCost:125000, level:18,
       parent:'research', requires:['research'], hiddenName:true, quantum:true, priority:10
     }
@@ -220,7 +220,7 @@ export function applyRedesign(nova) {
     }
     if (d.quantum) {
       req.push({
-        text:'Reach 200K run Credits or complete one rebirth',
+        text:'Reach 200K run Energy or complete one rebirth',
         met:state.s.run >= 200000 || state.s.rebirths > 0
       });
     }
@@ -801,7 +801,7 @@ export function applyRedesign(nova) {
         } else {
           span.textContent = d.hiddenName && !requirementsMet(d) ? 'FUTURE DEVELOPMENT' : 'AVAILABLE LAND';
           small.textContent = requirementsMet(d) ? 'Expansion plot' : `Foundry Level ${d.level}`;
-          em.textContent = hover ? `£${state.fmt(landCost(d))}` : '';
+          em.textContent = hover ? `${state.fmt(landCost(d))} ENERGY` : '';
         }
         projectElement(d.plotGroup,d.plotLabelEl,1.45,58);
       }
@@ -995,7 +995,7 @@ export function applyRedesign(nova) {
           const level=upgradeValue(id,key),cost=specializedCost(id,key),cap=Math.min(5,buildingLevel(plotById.get(id))+1);
           return `<article class="special-upgrade-row">
             <div><span>LV ${level}/5</span><h3>${name}</h3><p>${desc}</p></div>
-            <button data-action="facilityupgrade" data-id="${id}" data-key="${key}" ${level>=cap||state.s.energy<cost?'disabled':''}>${level>=5?'MAXED':level>=cap?'UPGRADE BUILDING FIRST':`£${state.fmt(cost)} · UPGRADE`}</button>
+            <button data-action="facilityupgrade" data-id="${id}" data-key="${key}" ${level>=cap||state.s.energy<cost?'disabled':''}>${level>=5?'MAXED':level>=cap?'UPGRADE BUILDING FIRST':`${state.fmt(cost)} ENERGY · UPGRADE`}</button>
           </article>`;
         }).join('')}
       </div>
@@ -1009,7 +1009,7 @@ export function applyRedesign(nova) {
     const cost=Math.round(base*Math.pow(1.75,level-1)*(1-constructionDiscount()));
     return `<div class="facility-level-card">
       <div><span>FACILITY LEVEL</span><strong>${level} → ${level+1}</strong><p>Physically expands this department and unlocks stronger specialised upgrades.</p></div>
-      <button class="primary" data-action="improvefacility" data-id="${id}" ${state.s.energy<cost?'disabled':''}>IMPROVE · £${state.fmt(cost)}</button>
+      <button class="primary" data-action="improvefacility" data-id="${id}" ${state.s.energy<cost?'disabled':''}>IMPROVE · ${state.fmt(cost)} ENERGY</button>
     </div>`;
   }
 
@@ -1038,7 +1038,7 @@ export function applyRedesign(nova) {
         <div class="machine-primary-action">
           ${i===0&&!level?`<button class="primary" data-action="startermachine" data-i="0">START MACHINE</button>`:
             `<button class="primary" data-action="factoryinspect" data-i="${i}">MANAGE</button>`}
-          ${running?`<button class="quiet-action" data-action="machinebuy" data-i="${i}" data-n="1" ${state.s.energy<q.cost||!q.n?'disabled':''}>Upgrade · £${state.fmt(q.cost)}</button>`:''}
+          ${running?`<button class="quiet-action" data-action="machinebuy" data-i="${i}" data-n="1" ${state.s.energy<q.cost||!q.n?'disabled':''}>Upgrade · ${state.fmt(q.cost)} ENERGY</button>`:''}
         </div>
       </article>`;
     }).join('');
@@ -1160,7 +1160,7 @@ export function applyRedesign(nova) {
   ui.warehouseView=function warehouseView(){
     const s=state.s;
     const stocks=[
-      ['CREDITS',`£${state.fmt(s.energy)}`,'Spendable foundry balance'],
+      ['ENERGY',`${state.fmt(s.energy)} ENERGY`,'Spendable foundry balance'],
       ['OFFLINE RESERVE',`${state.offlineHours}h`,'Maximum away-time storage'],
       ...(s.dust>0?[['STARDUST',state.fmt(s.dust),'Specialist material']]:[]),
       ...(s.tokens>0?[['ARCADE TOKENS',state.fmt(s.tokens),'Entertainment rewards']]:[])
@@ -1216,7 +1216,7 @@ export function applyRedesign(nova) {
       ${intro('MARKETPLACE','Trade & specialist equipment.','Use the exchange for deliberate transactions; specialist equipment remains below.',
         metric('STARDUST',state.fmt(state.s.dust))+metric('BULK',`${bulk}×`))}
       <div class="commodity-exchange">
-        <div><span>FOUNDRY CREDIT BUNDLE</span><h3>£${state.fmt(sellAmount)}</h3><p>Exchange surplus Credits for ${dustGain} Stardust.</p></div>
+        <div><span>FOUNDRY ENERGY PACK</span><h3>${state.fmt(sellAmount)}</h3><p>Exchange surplus Energy for ${dustGain} Stardust.</p></div>
         <button class="primary" data-action="markettrade" data-amount="${sellAmount}" data-reward="${dustGain}" ${state.s.energy<sellAmount?'disabled':''}>SELL FOR ${dustGain} STARDUST</button>
       </div>
       <details class="advanced-disclosure"><summary>Specialist equipment</summary><div class="market-listings">${originalDronesView()}</div></details>
@@ -1248,9 +1248,9 @@ export function applyRedesign(nova) {
   ui.treasuryView=function treasuryView(){
     return `<div class="treasury-interface">
       ${intro('TREASURY','Financial overview.','A late-game financial department for players who actually need deeper performance information.',
-        metric('NET PRODUCTION',`+${state.fmt(state.cps)}/s`)+metric('CURRENT CREDITS',`£${state.fmt(state.s.energy)}`))}
+        metric('NET PRODUCTION',`+${state.fmt(state.cps)}/s`)+metric('CURRENT ENERGY',`${state.fmt(state.s.energy)} ENERGY`))}
       <div class="finance-focus"><span>NET PRODUCTION</span><strong>+${state.fmt(state.cps)}<small>/s</small></strong><p>Current passive production after all active facility bonuses.</p></div>
-      <div class="simple-ledger"><div><span>Run Credits</span><strong>${state.fmt(state.s.run)}</strong></div><div><span>Lifetime Credits</span><strong>${state.fmt(state.s.lifetime)}</strong></div><div><span>Owned land</span><strong>${ex.owned.length}</strong></div><div><span>Built departments</span><strong>${ex.constructed.length}</strong></div></div>
+      <div class="simple-ledger"><div><span>Run Energy</span><strong>${state.fmt(state.s.run)}</strong></div><div><span>Lifetime Energy</span><strong>${state.fmt(state.s.lifetime)}</strong></div><div><span>Owned land</span><strong>${ex.owned.length}</strong></div><div><span>Built departments</span><strong>${ex.constructed.length}</strong></div></div>
       ${facilityImprove('treasury')}
       ${upgradeSection('treasury','TREASURY UPGRADES')}
     </div>`;
@@ -1259,10 +1259,10 @@ export function applyRedesign(nova) {
   ui.rebirthView=function quantumView(){
     return `<div class="quantum-interface">
       ${intro('QUANTUM FACILITY','Rebirth & ascension.','Prestige stays hidden until you have physically developed the Quantum district.',
-        metric('RUN VALUE',`£${state.fmt(state.s.run)}`)+metric('RESTART REWARD',`+${state.fmt(state.rebirthGain)} cores`))}
+        metric('RUN VALUE',`${state.fmt(state.s.run)} ENERGY`)+metric('RESTART REWARD',`+${state.fmt(state.rebirthGain)} cores`))}
       <div class="rebirth-clarity">
         <div><span>YOU KEEP</span><strong>Land, departments & facility upgrades</strong></div>
-        <div><span>YOU RESET</span><strong>Current run Credits & machine run progress</strong></div>
+        <div><span>YOU RESET</span><strong>Current run Energy & machine run progress</strong></div>
       </div>
       <div class="quantum-core-panel">${originalRebirthView()}</div>
       ${facilityImprove('quantum')}
@@ -1353,7 +1353,7 @@ export function applyRedesign(nova) {
       const cost=constructionCost(d);
       ui.dialog(`<div class="land-purchase-panel"><div class="eyebrow">OWNED LAND</div><h2>${d.hiddenName?'Development Site':d.name}</h2>
         ${job?`<p>Construction is underway. The department will become available when the site is complete.</p><div class="construction-readout"><span>BUILDING</span><strong>${Math.max(0,Math.ceil((job-Date.now())/1000))}s</strong></div>`:
-          `<p>This district is ready for development.</p><div class="land-facts"><div><span>PROJECT</span><strong>${d.name}</strong></div><div><span>CONSTRUCTION</span><strong>£${state.fmt(cost)}</strong></div></div>
+          `<p>This district is ready for development.</p><div class="land-facts"><div><span>PROJECT</span><strong>${d.name}</strong></div><div><span>CONSTRUCTION</span><strong>${state.fmt(cost)} ENERGY</strong></div></div>
            <button class="primary wide-action" data-action="beginconstruction" data-id="${d.id}" ${state.s.energy<cost?'disabled':''}>BEGIN CONSTRUCTION</button>`}
         <div class="actions"><button data-action="closedialog">Close</button></div></div>`);
       return;
@@ -1363,10 +1363,10 @@ export function applyRedesign(nova) {
     ui.dialog(`<div class="land-purchase-panel"><div class="eyebrow">${met?'EXPANSION PLOT':'FUTURE DEVELOPMENT'}</div>
       <h2>${revealName?d.name:'Undeveloped district'}</h2>
       <p>${met?'Purchase this land to expand your foundry.':'This area becomes available later in the foundry progression.'}</p>
-      <div class="land-facts"><div><span>LAND SIZE</span><strong>Medium</strong></div><div><span>COST</span><strong>${met?`£${state.fmt(cost)}`:'—'}</strong></div></div>
+      <div class="land-facts"><div><span>LAND SIZE</span><strong>Medium</strong></div><div><span>COST</span><strong>${met?`${state.fmt(cost)} ENERGY`:'—'}</strong></div></div>
       ${reqs.length?`<div class="land-requirements"><span>REQUIREMENTS</span>${reqs.map(r=>`<b class="${r.met?'met':''}">${r.met?'✓':'○'} ${r.text}</b>`).join('')}</div>`:''}
       ${met?`<div class="land-unlocks"><span>UNLOCKS</span><b>${d.name} construction</b><b>${d.subtitle} systems & upgrades</b></div>`:''}
-      <div class="actions"><button data-action="closedialog">Cancel</button><button class="primary" data-action="landpurchase" data-id="${d.id}" ${!met||state.s.energy<cost?'disabled':''}>PURCHASE LAND · £${state.fmt(cost)}</button></div>
+      <div class="actions"><button data-action="closedialog">Cancel</button><button class="primary" data-action="landpurchase" data-id="${d.id}" ${!met||state.s.energy<cost?'disabled':''}>PURCHASE LAND · ${state.fmt(cost)} ENERGY</button></div>
     </div>`);
   }
 
@@ -1427,7 +1427,7 @@ export function applyRedesign(nova) {
     ui.dialog(`<div class="machine-inspector"><div class="eyebrow">MACHINE HALL</div><h2>${names[i]||`Machine ${i+1}`}</h2>
       <div class="machine-inspector-value"><span>OUTPUT</span><strong>${state.fmt(state.machineRate(i))}/s</strong></div>
       <div class="machine-inspector-meta"><div><span>LEVEL</span><b>${level}</b></div><div><span>MILESTONE</span><b>${state.milestone(level)}×</b></div><div><span>STATUS</span><b>${level?'RUNNING':'IDLE'}</b></div></div>
-      <div class="actions"><button data-action="closedialog">Close</button><button class="primary" data-action="machinebuy" data-i="${i}" data-n="1" ${state.s.energy<q.cost||!q.n?'disabled':''}>UPGRADE · £${state.fmt(q.cost)}</button></div>
+      <div class="actions"><button data-action="closedialog">Close</button><button class="primary" data-action="machinebuy" data-i="${i}" data-n="1" ${state.s.energy<q.cost||!q.n?'disabled':''}>UPGRADE · ${state.fmt(q.cost)} ENERGY</button></div>
     </div>`);
   }
 
@@ -1441,6 +1441,11 @@ export function applyRedesign(nova) {
     if(a==='pausehow'){openPause('how');return;}
     if(a==='pauseback'){openPause('menu');return;}
     if(a==='returntomenu'){returnToMenu();return;}
+    if(a==='progressresetconfirm'){
+      ui.dialog(`<h2>Reset all foundry progression?</h2><p>This will wipe owned land, constructed departments, upgrades, machines, missions, and resources. Your saved settings will be kept.</p><div class="actions"><button data-action="closedialog">Cancel</button><button class="danger" data-action="progressresetdo">RESET ALL PROGRESSION</button></div>`);
+      return;
+    }
+    if(a==='progressresetdo'){resetProgression();ui.closeDialog();closePause();returnToMenu();return;}
     if(a==='settingsresetconfirm'){
       ui.dialog(`<h2>Reset settings to defaults?</h2><p>Your foundry progress will not be affected.</p><div class="actions"><button data-action="closedialog">Cancel</button><button class="danger" data-action="settingsresetdo">RESET SETTINGS</button></div>`);
       return;
@@ -1451,7 +1456,7 @@ export function applyRedesign(nova) {
       if(!d)return;
       const cost=landCost(d);
       if(state.s.settings.confirmPurchases && cost>=10000){
-        ui.dialog(`<div class="land-purchase-panel"><div class="eyebrow">CONFIRM PURCHASE</div><h2>Purchase this land?</h2><p>${d.hiddenName?'Expansion district':d.name} · £${state.fmt(cost)}</p><div class="actions"><button data-action="closedialog">Cancel</button><button class="primary" data-action="landconfirm" data-id="${d.id}">PURCHASE</button></div></div>`);
+        ui.dialog(`<div class="land-purchase-panel"><div class="eyebrow">CONFIRM PURCHASE</div><h2>Purchase this land?</h2><p>${d.hiddenName?'Expansion district':d.name} · ${state.fmt(cost)} ENERGY</p><div class="actions"><button data-action="closedialog">Cancel</button><button class="primary" data-action="landconfirm" data-id="${d.id}">PURCHASE</button></div></div>`);
       }else{
         if($('dialog').open)ui.closeDialog();
         performLandPurchase(d);
@@ -1625,7 +1630,7 @@ export function applyRedesign(nova) {
     }
     const firstCost=landCost(upgrade);
     if(!isOwned(upgrade)&&s.energy<firstCost){
-      return {step:4,title:'EARN CREDITS',text:`Save £${state.fmt(firstCost)} to purchase your first neighbouring land plot.`};
+      return {step:4,title:'EARN ENERGY',text:`Save ${state.fmt(firstCost)} Energy to purchase your first neighbouring land plot.`};
     }
     if(!isOwned(upgrade)){
       return {step:5,title:'EXPAND YOUR FOUNDRY',text:'You can now buy neighbouring land. Select the highlighted expansion plot.',target:'upgrade',targetType:'plot'};
@@ -1662,7 +1667,7 @@ export function applyRedesign(nova) {
       const cost=landCost(ready);
       return {
         label:'NEXT EXPANSION',
-        text:`Save for ${ready.hiddenName?'new land':ready.name} · £${state.fmt(cost)}`,
+        text:`Save for ${ready.hiddenName?'new land':ready.name} · ${state.fmt(cost)} ENERGY`,
         percent:Math.min(100,state.s.energy/Math.max(1,cost)*100)
       };
     }
@@ -1677,7 +1682,7 @@ export function applyRedesign(nova) {
   const originalPaint=ui.paint.bind(ui);
   ui.paint=function v5Paint(){
     originalPaint();
-    $('energy').textContent=`£${state.fmt(this.displayEnergy)}`;
+    $('energy').textContent=`${state.fmt(this.displayEnergy)}`;
     $('productionResource')?.classList.add('hidden');
     $('dustResource')?.classList.toggle('hidden',!(ex.constructed.includes('market')||ex.constructed.includes('archive')||ex.constructed.includes('arcade'))||state.s.dust<=0);
     $('coresResource')?.classList.toggle('hidden',!ex.constructed.includes('quantum'));
@@ -1691,7 +1696,7 @@ export function applyRedesign(nova) {
     const r=world.current;
     if(r?.plot){
       $('interactLabel').textContent=isOwned(r.plot)?(ex.jobs[r.plot.id]?'Construction site':'Owned land'):'Expansion plot';
-      $('interactSub').textContent=isOwned(r.plot)?'Click for development options':requirementsMet(r.plot)?`£${state.fmt(landCost(r.plot))} · click to inspect`:'Click to view requirements';
+      $('interactSub').textContent=isOwned(r.plot)?'Click for development options':requirementsMet(r.plot)?`${state.fmt(landCost(r.plot))} Energy · click to inspect`:'Click to view requirements';
     }else if(r?.department){
       $('interactLabel').textContent=displayName(r.department);
       $('interactSub').textContent=r.department.tooltip;
@@ -1731,7 +1736,7 @@ export function applyRedesign(nova) {
       <section><h2>AUDIO</h2>${rangeSetting('Master volume','master',0,1,.05)}${toggleSetting('Music playback','music')}${rangeSetting('Music volume','musicVolume',0,1,.05)}${rangeSetting('Sound effects','sfx',0,1,.05)}${toggleSetting('UI sounds','sound')}</section>
       <section><h2>CAMERA</h2>${rangeSetting('Pan sensitivity','sensitivity',.5,2,.1)}${rangeSetting('Zoom sensitivity','zoomSensitivity',.5,2,.1)}${rangeSetting('Rotation speed','rotationSpeed',.5,2,.1)}${toggleSetting('Edge scrolling','edgeScroll')}${toggleSetting('Camera shake','shake')}${toggleSetting('Smooth camera movement','smoothCamera')}</section>
       <section><h2>UI</h2>${selectSetting('UI scale','uiScale',[[.8,'80%'],[.9,'90%'],[1,'100%'],[1.1,'110%'],[1.2,'120%']])}${selectSetting('Building labels','buildingLabels',[['always','Always'],['hover','Hover'],['minimal','Minimal']])}${selectSetting('Tutorial size','tutorialSize',[['normal','Normal'],['large','Large']])}${selectSetting('Number formatting','numberFormat',[['compact','12.4K'],['full','12,400']])}${toggleSetting('Reduced motion','reduced')}</section>
-    </div><div class="settings-footer"><button class="danger quiet-danger" data-action="settingsresetconfirm">RESET TO DEFAULT</button></div>`;
+    </div><div class="settings-footer"><button class="quiet-danger" data-action="progressresetconfirm">RESET ALL PROGRESSION</button><button class="danger quiet-danger" data-action="settingsresetconfirm">RESET TO DEFAULT</button></div>`;
   }
 
   function pauseMenuMarkup(){
@@ -1755,8 +1760,8 @@ export function applyRedesign(nova) {
   }
   function howMarkup(){
     const cards=[
-      ['1','RUN YOUR MACHINES','Production creates Credits automatically.'],
-      ['2','EARN CREDITS','Use income to improve production and save for land.'],
+      ['1','RUN YOUR MACHINES','Production creates Energy automatically.'],
+      ['2','EARN ENERGY','Use income to improve production and save for land.'],
       ['3','UPGRADE FACILITIES','Each department has upgrades that match its purpose.'],
       ['4','BUY NEIGHBOURING LAND','Expansion plots unlock new development space.'],
       ['5','CONSTRUCT DEPARTMENTS','A system does not exist until its building is complete.'],
@@ -1804,6 +1809,24 @@ export function applyRedesign(nova) {
     applyUiSettings();
     state.emit('audio-settings');
     state.save();
+  }
+
+  function resetProgression(){
+    const keptSettings={...state.s.settings};
+    const fresh=state.validate({settings:keptSettings});
+    state.s=fresh;
+    state.storageFailed=false;
+    state.resetting=false;
+    state.recompute();
+    applyUiSettings();
+    state.emit('audio-settings');
+    state.emit('change');
+    state.emit('world');
+    state.save();
+    world.paused=true;
+    if(typeof world.sync==='function')world.sync();
+    if(typeof ui.render==='function')ui.render();
+    if(typeof ui.paint==='function')ui.paint();
   }
 
   document.addEventListener('change',event=>{
