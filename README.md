@@ -1,107 +1,40 @@
-# Nova Foundry — Overlook v5.1
+# Nova Foundry — Overlook v3
 
-A bird’s-eye foundry management game where land ownership, construction and facility upgrades physically grow the player's industrial complex.
+A bird’s-eye, point-and-click edition of Nova Foundry, with a tidy garden campus inspired by the supplied farm reference. Built with original procedural 3D scenery.
 
 ## Play
 
-Extract the ZIP and open `index.html` in a modern desktop browser with WebGL enabled. A ready-to-play bundle is included; no build step is required.
-
-## Expansion loop
-
-The core progression is now:
-
-**Earn Energy → Buy land → Construct a department → Upgrade it → Unlock new expansion choices**
-
-A new save owns only the starter district with the Energy Core and Machine Workshop. Other departments do not exist until their plots are purchased and, where required, construction is completed.
-
-Nearby land appears as natural undeveloped property with lightweight boundaries and purchase signage. Only relevant frontier plots are surfaced at a time so late-game systems are not spoiled or shown as a wall of locked buildings.
-
-Early expansion is guided through the Engineering Plot (Upgrade Lab) and Operations Plot (Mission Control). After onboarding, additional districts become strategic choices such as Logistics (Warehouse) and Personnel (Worker Office), followed by Research, Marketplace and later specialist/end-game districts.
-
-## Facility upgrades
-
-Each constructed department owns its own upgrade system. Hidden or unconstructed facilities have no active bonuses and no upgrade UI.
-
-Examples include:
-
-- Machine Workshop / Hall — Output, Speed and Reliability.
-- Warehouse — storage racks, floor space, sorting and cargo handling.
-- Worker Office — Staff, Training and Management.
-- Research Centre — research Speed, Efficiency and Quality.
-- Mission Control — contract Quality, Slots and Refresh.
-- Marketplace — Negotiation, Bulk Trading and Market Intelligence.
-- Archive, Arcade, Treasury and Quantum Facility — dedicated specialist upgrades.
-- Upgrade Lab — global Production, Energy, Infrastructure and Expansion improvements.
-
-Major facility levels visibly add building details using explicit model tiers. Old levels are not duplicated inside new models.
-
-## Land and construction
-
-Land ownership, construction status, building level, building upgrades and construction jobs are persisted. Purchase actions are guarded so the same plot or facility cannot be purchased repeatedly while a transaction is processing.
-
-Buying land changes the world: undeveloped visuals are removed, maintained ground appears, access paths/power connections extend, and a construction site can replace the empty plot. Completed construction activates the department and its gameplay bonuses.
-
-## Tutorial
-
-The onboarding is a large seven-step panel that teaches one action at a time:
-
-1. Select the Machine Workshop.
-2. Start production.
-3. Improve the first machine.
-4. Earn enough Energy to expand.
-5. Purchase the Engineering Plot.
-6. Complete construction.
-7. Open the new Upgrade Lab.
-
-The tutorial highlights only the current target and can focus the camera with **Show Me**.
-
-## HUD, pause and settings
-
-The permanent HUD is intentionally minimal. Locked currencies remain hidden until relevant.
-
-- The top-right gear opens the same Settings system used by the pause menu.
-- `Esc` closes the highest-priority interface first: confirmation/dialog → building interface → pause/settings subpage → pause menu.
-- Pressing `Esc` in the normal world opens Pause.
-- Settings include General, Graphics, Audio, Camera and UI categories and persist between sessions.
-- UI scale, label density, tutorial size, number formatting and reduced motion are supported.
+Extract the entire ZIP, then open `index.html` in a modern desktop browser with WebGL enabled. Keep `assets` alongside it. No installation, account, internet connection or build step is required. Touch layouts are included; a desktop browser is the easiest way to open the downloaded game.
 
 ## Controls
 
-- **Left click** — select land/buildings and UI actions.
-- **Drag empty ground** — pan.
-- **WASD / Arrow keys** — move the camera.
-- **Mouse wheel / pinch** — zoom.
-- **Q / E** — rotate.
-- **Esc** — close/back/pause.
+- Click or tap the reactor to earn energy. Click a department building to open that system.
+- Drag empty ground to pan. Scroll or pinch to zoom.
+- Arrow keys pan and Home returns to the Origin core.
+- Hold Alt to reveal extra status text above department buildings.
+- Esc closes the active department.
+- In the Upgrade Lab, drag the skill tree to explore it and select nodes to inspect or buy upgrades.
 
-## Saving
+## What changed
 
-The existing game save remains compatible. v5 also stores the supplemental land/facility/settings state in browser storage so the shipped prebuilt runtime preserves the new progression data. Export/import continues to carry the main save, while the v5 layer restores supported expansion/settings fields during import when present.
+The permanent system sidebar has been removed. The foundry itself is now the navigation layer: Upgrade Lab, Machine Hall, Mission Control, Foundry Archive, Arcade, Research Centre, Worker Office, Warehouse, Marketplace, Treasury, Quantum Facility and Administration each open their own department interface. The persistent HUD is limited to foundry level and core resources, while department panels use a dark management-game visual language and keep the world visible behind them.
+
+The fixed overhead camera, minigames, progression systems, 134 skill nodes, machines, ten sectors, missions, achievements, saving and prestige layers are retained.
+
+## Saving and existing progress
+
+Progress autosaves every five seconds in the browser. Use Administration → Settings → Export to keep a portable backup. To move progress from the previous 3D edition, export there and import here through Administration → Settings. The v2 save format is supported; camera settings use the new overhead view. Classic v1 imports retain transferable currency and XP. Browser storage availability depends on the browser and file location, so use an exported backup when moving the game.
 
 ## Project layout
 
-- `index.html` — offline entry point and minimal HUD/pause shells.
-- `assets/game.js` — prebuilt base runtime.
-- `assets/redesign.js` — v5 land, facility, tutorial and settings runtime layer.
-- `assets/style.css` — base and responsive v5 styling.
-- `src/` — maintainable source modules with v5 state/redesign integration.
-- `package.json` / `package-lock.json` — development dependencies.
+- `index.html` — offline game entry point.
+- `assets/style.css` — game styling.
+- `assets/game.js` — prebuilt browser bundle used by `index.html`.
+- `assets/redesign.js` — runtime department/building navigation layer for the prebuilt bundle.
+- `src/` — maintainable source modules used to produce the bundle, including `redesign.js`.
+- `package.json` / `package-lock.json` — reproducible development dependencies.
 - `THIRD-PARTY-LICENSES.txt` — dependency license notices.
 
-## Development build
+## Source and build
 
-With Node.js available:
-
-```bash
-npm ci
-npm run build
-```
-
-The source build bundles `src/main.js`, including the v5 redesign, into `assets/game.js`. The redesign uses a runtime guard so the standalone `assets/redesign.js` layer does not apply twice.
-
-## v5.1 polish
-
-- Energy is the sole visible primary currency.
-- Expansion plots and departments are spaced farther apart.
-- Land purchase dialogs no longer show horizontal scrollbars.
-- Settings includes a confirmed **Reset All Progression** action that preserves settings.
+`src/` contains the source modules, including the building-navigation redesign layer. `assets/game.js` is the ready-to-play bundled build. For development, install Node.js and run `npm ci`, then `npm run build` from this folder. Dependency licenses are in `THIRD-PARTY-LICENSES.txt`.

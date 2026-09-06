@@ -1,8 +1,8 @@
 {
   "name": "nova-foundry-overlook",
-  "version": "5.3.0",
+  "version": "3.0.0",
   "private": true,
-  "description": "Nova Foundry v5.3 with reliable full progression reset and land-based Energy progression",
+  "description": "Offline bird’s-eye point-and-click reactor incremental game",
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --target=es2020 --minify --outfile=assets/game.js"

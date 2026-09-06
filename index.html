@@ -21,27 +21,22 @@
       </div>
 
       <div class="resource-strip" aria-label="Foundry resources">
-        <div id="energyResource">
+        <div>
           <span>ENERGY</span>
           <strong id="energy">0</strong>
         </div>
-        <div class="production-resource" id="productionResource">
+        <div class="production-resource">
           <span>PRODUCTION</span>
           <strong><b id="production">0</b><small>/s</small></strong>
         </div>
-        <div id="dustResource">
+        <div>
           <span>STARDUST</span>
           <strong id="dust">0</strong>
         </div>
-        <div id="coresResource">
+        <div>
           <span>QUANTUM CORES</span>
           <strong id="cores">0</strong>
         </div>
-      </div>
-
-      <div class="hud-system-actions">
-        <span class="save-status hidden" id="saveStatus">SAVED</span>
-        <button class="settings-gear" id="settingsGear" data-action="quicksettings" aria-label="Open settings" title="Settings">⚙</button>
       </div>
     </header>
 
@@ -69,21 +64,11 @@
     </div>
 
     <div id="worldLabels" aria-hidden="true"></div>
-
-    <section class="tutorial-panel hidden" id="tutorialPanel" aria-live="polite">
-      <div class="tutorial-topline">
-        <span>FOUNDRY TRAINING</span>
-        <b id="tutorialStep">1/7</b>
-      </div>
-      <h2 id="tutorialTitle">GETTING STARTED</h2>
-      <p id="tutorialText">Select your Machine Workshop to begin production.</p>
-      <button class="primary" data-action="tutorialfocus" id="tutorialShow">SHOW ME</button>
-    </section>
     <div class="hidden" id="activityHud"></div>
     <div class="hidden" id="eventHud"></div>
 
     <footer class="hud-bottom">
-      <span class="map-help">Drag to pan <span>·</span> Scroll to zoom <span>·</span> Q / E to rotate</span>
+      <span class="map-help">Drag to pan <span>·</span> Scroll to zoom <span>·</span> Hold ALT for status</span>
       <button class="hidden" data-action="return" id="leaveGame">Leave minigame</button>
     </footer>
 
@@ -111,19 +96,6 @@
     </div>
   </div>
 
-  <div class="hidden pause-overlay" id="pauseOverlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
-    <div class="pause-card">
-      <header class="pause-header">
-        <div>
-          <span class="eyebrow">NOVA FOUNDRY</span>
-          <h1 id="pauseTitle">Paused</h1>
-        </div>
-        <button class="close-button" data-action="pauseresume" aria-label="Resume game">×</button>
-      </header>
-      <div class="pause-body" id="pauseBody"></div>
-    </div>
-  </div>
-
   <dialog id="dialog"><div id="dialogBody"></div></dialog>
   <div aria-live="polite" id="toasts"></div>
   <div id="floaters"></div>
@@ -137,18 +109,17 @@
   <div id="welcome">
     <div class="welcome-card">
       <div class="eyebrow">NOVA FOUNDRY / OVERLOOK</div>
-      <h1>Start small. Build outward.</h1>
-      <p>Begin with one working plot. Earn Energy, buy neighbouring land, construct new departments and watch your foundry grow.</p>
+      <h1>Your foundry is the interface.</h1>
+      <p>Click departments in the world to manage production, upgrades, missions, research and more.</p>
       <button class="primary large" id="enter">Enter the foundry <span>→</span></button>
       <div class="welcome-help">
-        Select buildings in the world to manage them.<br>
+        Hover a building to identify it.<br>
         Drag to pan. Scroll or pinch to zoom. Press Esc to close a department.
       </div>
       <div id="loadNote"></div>
     </div>
   </div>
 
-  <script>window.__NOVA_PROGRESSIVE_REDESIGN_APPLIED__ = true;</script>
   <script src="assets/game.js"></script>
   <script src="assets/redesign.js"></script>
 </body>
