@@ -127,68 +127,68 @@ export function applyRedesign(nova) {
 
   const PLOTS = [
     {
-      id:'factory', page:'control', name:'MACHINE HALL', starterName:'MACHINE WORKSHOP',
-      subtitle:'Production', tooltip:'Manage production', kind:'factory',
-      x:0.0, z:6.6, accent:'#d79a53', ground:'#9fb67f', landCost:0, buildCost:0, level:1,
+      id:'factory', page:'control', name:'GENERATOR HALL', starterName:'GENERATOR WORKSHOP',
+      subtitle:'Energy production', tooltip:'Manage generators', kind:'factory',
+      x:0.0, z:10.0, accent:'#d79a53', ground:'#9fb67f', landCost:0, buildCost:0, level:1,
       starter:true, priority:0
     },
     {
       id:'upgrade', page:'tree', name:'UPGRADE LAB', subtitle:'Global engineering',
-      tooltip:'Improve the whole foundry', kind:'upgrade', x:-13.4, z:0.2,
+      tooltip:'Improve the whole foundry', kind:'upgrade', x:-22.0, z:8.0,
       accent:'#57b9b3', ground:'#95b398', landCost:75, buildCost:0, level:1,
       autoBuild:true, parent:'factory', priority:1
     },
     {
       id:'mission', page:'missions', name:'MISSION CONTROL', subtitle:'Objectives',
-      tooltip:'Review contracts and objectives', kind:'mission', x:13.2, z:4.4,
+      tooltip:'Review contracts and objectives', kind:'mission', x:23.0, z:10.0,
       accent:'#d8814f', ground:'#a7b17d', landCost:350, buildCost:0, level:2,
       autoBuild:true, parent:'upgrade', requires:['upgrade'], priority:2
     },
     {
       id:'warehouse', page:'warehouse', name:'WAREHOUSE', subtitle:'Logistics',
-      tooltip:'Manage storage and reserves', kind:'warehouse', x:-16.4, z:15.2,
+      tooltip:'Manage storage and reserves', kind:'warehouse', x:-30.0, z:28.0,
       accent:'#89989c', ground:'#9fa58e', landCost:3500, buildCost:1400, level:4,
       parent:'mission', requires:['mission'], priority:3
     },
     {
       id:'workers', page:'workers', name:'WORKER OFFICE', subtitle:'Personnel',
-      tooltip:'Manage staff and assignments', kind:'workers', x:16.0, z:15.0,
+      tooltip:'Manage staff and assignments', kind:'workers', x:25.0, z:28.0,
       accent:'#d8b75d', ground:'#aeb18b', landCost:3000, buildCost:1200, level:4,
       parent:'mission', requires:['mission'], priority:4
     },
     {
       id:'research', page:'research', name:'RESEARCH CENTRE', subtitle:'Technology',
-      tooltip:'Run research projects', kind:'research', x:-17.2, z:-12.8,
+      tooltip:'Run research projects', kind:'research', x:-20.0, z:-18.0,
       accent:'#668fc8', ground:'#8fab9c', landCost:10000, buildCost:4500, level:7,
       parent:'upgrade', anyOf:['warehouse','workers'], priority:5
     },
     {
       id:'market', page:'market', name:'MARKETPLACE', subtitle:'Trading',
-      tooltip:'Trade resources and equipment', kind:'market', x:19.2, z:-11.8,
+      tooltip:'Trade resources and equipment', kind:'market', x:35.0, z:-8.0,
       accent:'#69a990', ground:'#99b08d', landCost:22000, buildCost:9000, level:9,
       parent:'factory', requires:['warehouse'], priority:6
     },
     {
       id:'archive', page:'collection', name:'FOUNDRY ARCHIVE', subtitle:'Discoveries',
-      tooltip:'Browse recovered discoveries', kind:'archive', x:-24.0, z:3.0,
+      tooltip:'Browse recovered discoveries', kind:'archive', x:-42.0, z:8.0,
       accent:'#6ea77c', ground:'#9eae89', landCost:48000, buildCost:17000, level:12,
       parent:'warehouse', requires:['research'], priority:7
     },
     {
       id:'arcade', page:'arcade', name:'ARCADE', subtitle:'Side activities',
-      tooltip:'Play foundry minigames', kind:'arcade', x:7.8, z:24.0,
+      tooltip:'Play foundry minigames', kind:'arcade', x:8.0, z:42.0,
       accent:'#a071c5', ground:'#a1a47f', landCost:55000, buildCost:18000, level:13,
       parent:'workers', requires:['workers'], priority:8
     },
     {
       id:'treasury', page:'treasury', name:'TREASURY', subtitle:'Advanced finances',
-      tooltip:'Review foundry performance', kind:'treasury', x:25.0, z:4.0,
+      tooltip:'Review foundry performance', kind:'treasury', x:42.0, z:16.0,
       accent:'#caa45b', ground:'#a8aa85', landCost:95000, buildCost:32000, level:16,
       parent:'market', requires:['market'], priority:9
     },
     {
       id:'quantum', page:'rebirth', name:'QUANTUM FACILITY', subtitle:'Prestige',
-      tooltip:'Manage rebirth progression', kind:'quantum', x:0.0, z:-25.8,
+      tooltip:'Manage rebirth progression', kind:'quantum', x:0.0, z:-40.0,
       accent:'#9b73d0', ground:'#8f9a8d', landCost:250000, buildCost:125000, level:18,
       parent:'research', requires:['research'], hiddenName:true, quantum:true, priority:10
     }
@@ -469,11 +469,8 @@ export function applyRedesign(nova) {
     const dx = b.x-a.x, dz=b.z-a.z, len=Math.hypot(dx,dz);
     const g = new Group();
     infrastructureRoot.add(g);
-    const road = box(g,(a.x+b.x)/2,-.018,(a.z+b.z)/2,1.5,.07,len,'#d3b77e');
-    road.rotation.y = Math.atan2(dx,dz);
-    const conduit = box(g,(a.x+b.x)/2,.055,(a.z+b.z)/2,.12,.05,len,'#6f9a82',true);
-    conduit.rotation.y = road.rotation.y;
     g.visible = false;
+    g.userData.connectionHidden = true;
     return g;
   }
 
@@ -1424,7 +1421,7 @@ export function applyRedesign(nova) {
   function showMachineInspector(i){
     const level=state.s.machines[i]||0,q=state.quote(i,1);
     const names=['Energy Collector','Ion Generator','Fusion Engine','Photon Processor','Dark Matter Drill','Quantum Reactor'];
-    ui.dialog(`<div class="machine-inspector"><div class="eyebrow">MACHINE HALL</div><h2>${names[i]||`Machine ${i+1}`}</h2>
+    ui.dialog(`<div class="machine-inspector"><div class="eyebrow">GENERATOR HALL</div><h2>${names[i]||`Machine ${i+1}`}</h2>
       <div class="machine-inspector-value"><span>OUTPUT</span><strong>${state.fmt(state.machineRate(i))}/s</strong></div>
       <div class="machine-inspector-meta"><div><span>LEVEL</span><b>${level}</b></div><div><span>MILESTONE</span><b>${state.milestone(level)}×</b></div><div><span>STATUS</span><b>${level?'RUNNING':'IDLE'}</b></div></div>
       <div class="actions"><button data-action="closedialog">Close</button><button class="primary" data-action="machinebuy" data-i="${i}" data-n="1" ${state.s.energy<q.cost||!q.n?'disabled':''}>UPGRADE · ${state.fmt(q.cost)} ENERGY</button></div>
@@ -1445,7 +1442,7 @@ export function applyRedesign(nova) {
       ui.dialog(`<h2>Reset all foundry progression?</h2><p>This will wipe owned land, constructed departments, upgrades, machines, missions, and resources. Your saved settings will be kept.</p><div class="actions"><button data-action="closedialog">Cancel</button><button class="danger" data-action="progressresetdo">RESET ALL PROGRESSION</button></div>`);
       return;
     }
-    if(a==='progressresetdo'){resetProgression();ui.closeDialog();closePause();returnToMenu();return;}
+    if(a==='progressresetdo'){resetProgression();ui.closeDialog();closePause();ui.notice('All progression reset.');return;}
     if(a==='settingsresetconfirm'){
       ui.dialog(`<h2>Reset settings to defaults?</h2><p>Your foundry progress will not be affected.</p><div class="actions"><button data-action="closedialog">Cancel</button><button class="danger" data-action="settingsresetdo">RESET SETTINGS</button></div>`);
       return;
@@ -1554,7 +1551,7 @@ export function applyRedesign(nova) {
         state.xp(8);
         state.save();
         world.sync();
-        ui.notice('Energy Collector online · production started');
+        ui.notice('Generator online · energy production started');
         this.render();
       }
       return;
@@ -1579,7 +1576,7 @@ export function applyRedesign(nova) {
       const d=plotById.get(step.target);
       if(d){
         world.goal.set(d.x,0,d.z);
-        world.goalSize=23;
+        world.goalSize=27;
       }
       return;
     }
@@ -1813,8 +1810,13 @@ export function applyRedesign(nova) {
 
   function resetProgression(){
     const keptSettings={...state.s.settings};
+    try{localStorage.removeItem(V5_SAVE_KEY);}catch{}
+    try{localStorage.removeItem('nova-foundry-3d-v2');}catch{}
     const fresh=state.validate({settings:keptSettings});
+    fresh.expansion=freshExpansion();
     state.s=fresh;
+    ex=state.s.expansion;
+    normalizeExpansion();
     state.storageFailed=false;
     state.resetting=false;
     state.recompute();
@@ -1822,11 +1824,12 @@ export function applyRedesign(nova) {
     state.emit('audio-settings');
     state.emit('change');
     state.emit('world');
-    state.save();
-    world.paused=true;
     if(typeof world.sync==='function')world.sync();
+    if(typeof ui.close==='function')ui.close();
     if(typeof ui.render==='function')ui.render();
     if(typeof ui.paint==='function')ui.paint();
+    world.paused=false;
+    state.save();
   }
 
   document.addEventListener('change',event=>{

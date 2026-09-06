@@ -2493,3 +2493,32 @@ body.land-foundry .hud-top{
   height:0;
   display:none;
 }
+
+
+/* v5.2 polish: center Energy HUD, keep settings at top-right */
+body.department-redesign .hud-top{
+  justify-content:flex-start;
+  position:absolute;
+}
+body.department-redesign .foundry-mark{
+  position:absolute;
+  left:18px;
+  top:11px;
+}
+body.department-redesign .resource-strip{
+  position:absolute;
+  left:50%;
+  top:11px;
+  transform:translateX(-50%);
+  margin-left:0;
+  z-index:13;
+}
+body.department-redesign .hud-system-actions{
+  position:absolute;
+  top:11px;
+  right:18px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  z-index:13;
+}
