@@ -1,686 +1,94 @@
-(() => {
-  const nova = window.__NOVA;
-  if (!nova) {
-    console.error('Nova Foundry redesign could not attach: runtime handle unavailable.');
-    return;
-  }
-
-
-function applyRedesign(nova) {
-  if (!nova || window.__NOVA_REDESIGN_APPLIED__) return;
-  window.__NOVA_REDESIGN_APPLIED__ = true;
-
-  const { state, world, ui, nodes = [], areas = [] } = nova;
-  const $ = (id) => document.getElementById(id);
-  const menu = $('menu');
-  const menuContent = $('menuContent');
-  const menuTitle = $('menuTitle');
-  const worldLabels = $('worldLabels');
-
-  document.body.classList.add('department-redesign');
-  world.hoverRing.material.opacity = 0;
-
-  function interactionRecord(object) {
-    let found = null;
-    object?.traverse?.((child) => {
-      if (!found && child.userData?.interactable) found = child.userData.interactable;
-    });
-    return found;
-  }
-
-  // Retire the old menu-like buildings. Their systems are re-homed below.
-  const retiredActions = new Set([
-    'tree', 'arcade', 'research', 'rebirth', 'drones',
-    'challenges', 'travel', 'daily'
-  ]);
-  for (const object of world.interactables) {
-    const record = interactionRecord(object);
-    if (record && retiredActions.has(record.action)) {
-      object.visible = false;
-      record.retiredNavigation = true;
-    }
-  }
-
-  const departments = [
-    { id:'workers', page:'workers', name:'WORKER OFFICE', subtitle:'People & assignments', tooltip:'Manage workers and assignments', x:-14, z:8.5, accent:'#d8b75d', kind:'workers' },
-    { id:'mission', page:'missions', name:'MISSION CONTROL', subtitle:'Contracts & objectives', tooltip:'Review contracts and objectives', x:-5, z:8.5, accent:'#d8814f', kind:'mission' },
-    { id:'archive', page:'collection', name:'FOUNDRY ARCHIVE', subtitle:'Collection & discoveries', tooltip:'Browse discoveries and collection', x:5, z:8.5, accent:'#6ea77c', kind:'archive' },
-    { id:'arcade', page:'arcade', name:'ARCADE', subtitle:'Minigames & scores', tooltip:'Play foundry minigames', x:14, z:8.5, accent:'#a071c5', kind:'arcade' },
-
-    { id:'treasury', page:'treasury', name:'TREASURY', subtitle:'Economy & performance', tooltip:'Review foundry finances', x:-14, z:0.5, accent:'#caa45b', kind:'treasury' },
-    { id:'upgrade', page:'tree', name:'UPGRADE LAB', subtitle:'Improve your foundry', tooltip:'Manage the skill tree', x:-6, z:0.5, accent:'#57b9b3', kind:'upgrade' },
-    { id:'factory', page:'control', name:'MACHINE HALL', subtitle:'Machines & production', tooltip:'Manage machines and production', x:6, z:0.5, accent:'#d79a53', kind:'factory' },
-    { id:'market', page:'market', name:'MARKETPLACE', subtitle:'Drones & specialist goods', tooltip:'Trade for foundry equipment', x:14, z:0.5, accent:'#69a990', kind:'market' },
-
-    { id:'admin', page:'admin', name:'ADMINISTRATION', subtitle:'Records & settings', tooltip:'Open administration systems', x:-14, z:-8.5, accent:'#9ba69c', kind:'admin' },
-    { id:'warehouse', page:'warehouse', name:'WAREHOUSE', subtitle:'Inventory & reserves', tooltip:'Inspect stored resources', x:-5, z:-8.5, accent:'#89989c', kind:'warehouse' },
-    { id:'quantum', page:'rebirth', name:'QUANTUM FACILITY', subtitle:'Rebirth & ascension', tooltip:'Manage prestige progression', x:5, z:-8.5, accent:'#9b73d0', kind:'quantum' },
-    { id:'research', page:'research', name:'RESEARCH CENTRE', subtitle:'New technology', tooltip:'Run research projects', x:14, z:-8.5, accent:'#668fc8', kind:'research' }
-  ];
-
-  const departmentByPage = new Map(departments.map((d) => [d.page, d]));
-  const Group = world.core.constructor;
-
-  function trim(g, accent) {
-    world.box(g, 0, 2.42, 0, 4.25, .13, 3.65, accent, true);
-    world.box(g, 0, .46, 1.84, 3.65, .12, .08, accent, true);
-    for (const x of [-1.15, 1.15]) {
-      world.box(g, x, 1.35, 1.83, .75, .78, .06, '#668b8b', true);
-    }
-  }
-
-  function decorate(g, d) {
-    const a = d.accent;
-    if (d.kind === 'upgrade') {
-      world.cylinder(g, 0, 3.05, 0, .18, 1.25, '#5f6f69');
-      world.sphere(g, 0, 3.68, 0, .42, a, true);
-      world.ring(g, 0, 3.68, 0, .72, a, .35);
-      world.ring(g, 0, 3.68, 0, .94, a, 1.25);
-    } else if (d.kind === 'factory') {
-      for (const x of [-1.25, 1.25]) {
-        world.cylinder(g, x, 3.05, -.85, .28, 1.65, '#59605b');
-        world.box(g, x, 3.92, -.85, .72, .12, .72, a, true);
-      }
-      world.box(g, 0, .9, 1.9, 2.35, 1.05, .12, '#555d58');
-      for (let i = -2; i <= 2; i++) world.box(g, i * .45, .9, 1.98, .05, .95, .03, '#252b28');
-    } else if (d.kind === 'mission') {
-      world.cylinder(g, 0, 3.05, -.25, .1, 1.45, '#667069');
-      const dish = world.ring(g, 0, 3.78, -.25, .82, a, .82);
-      dish.rotation.z = .45;
-      world.sphere(g, 0, 3.78, -.25, .16, a, true);
-      world.box(g, 0, 1.1, 1.92, 2.15, .86, .08, '#704d38');
-    } else if (d.kind === 'archive') {
-      world.box(g, 0, 1.28, 1.91, 2.7, 1.18, .08, '#6b8f81', true);
-      world.box(g, 0, 2.85, 0, 2.9, .24, 2.5, '#29312c');
-      for (const x of [-1.55, 1.55]) world.box(g, x, 1.3, 1.88, .28, 1.5, .12, a, true);
-    } else if (d.kind === 'arcade') {
-      world.box(g, 0, 2.8, 1.72, 3.15, .52, .14, '#33233f');
-      world.box(g, 0, 2.8, 1.81, 2.45, .18, .05, a, true);
-      for (const x of [-1.4, 1.4]) world.ring(g, x, 1.35, 1.91, .42, a, 0);
-    } else if (d.kind === 'research') {
-      world.cylinder(g, 0, 2.9, 0, .58, .5, '#596c77');
-      for (let i = 0; i < 3; i++) world.ring(g, 0, 3.15 + i * .25, 0, .72 + i * .14, a, i * .65);
-      world.sphere(g, 0, 3.42, 0, .28, a, true);
-    } else if (d.kind === 'workers') {
-      world.box(g, 0, 3.05, 0, 2.9, .7, 2.65, '#2c332d');
-      world.box(g, 0, 3.42, 1.35, 2.1, .18, .12, a, true);
-      for (const x of [-1.35, 1.35]) world.box(g, x, 1.1, 1.91, .35, 1.6, .08, '#8a7452');
-    } else if (d.kind === 'warehouse') {
-      world.box(g, 0, 1.18, 1.92, 2.9, 1.45, .1, '#727d7a');
-      for (let i = -2; i <= 2; i++) world.box(g, i * .55, 1.18, 1.99, .05, 1.35, .03, '#303733');
-      for (const x of [-1.45, 1.45]) {
-        world.box(g, x, .48, -1.35, .82, .82, .82, '#6e5c46');
-        world.box(g, x, .91, -1.35, .72, .08, .72, a);
-      }
-    } else if (d.kind === 'market') {
-      world.box(g, 0, 2.82, 0, 4.55, .18, 3.95, a, true);
-      for (const x of [-1.45, 0, 1.45]) world.box(g, x, 1.05, 1.9, 1.0, .85, .12, '#52635b');
-      world.ring(g, 0, 3.32, 0, .65, a, 0);
-    } else if (d.kind === 'treasury') {
-      world.cylinder(g, 0, 1.25, 1.9, 1.08, .18, '#7c7562');
-      world.ring(g, 0, 1.25, 2.02, .82, a, 0);
-      world.box(g, 0, 3.02, 0, 3.15, .5, 2.6, '#262c28');
-      world.box(g, 0, 3.31, 1.38, 2.2, .13, .08, a, true);
-    } else if (d.kind === 'quantum') {
-      world.cylinder(g, 0, 2.95, 0, .72, .42, '#555461');
-      world.sphere(g, 0, 3.35, 0, .58, a, true);
-      for (let i = 0; i < 3; i++) world.ring(g, 0, 3.35, 0, .9 + i * .18, a, .4 + i * .65);
-    } else if (d.kind === 'admin') {
-      world.box(g, 0, 3.0, 0, 3.0, .68, 2.65, '#2c322e');
-      world.cylinder(g, 0, 3.95, -.3, .08, 1.3, '#6e7770');
-      world.box(g, .55, 4.35, -.3, 1.1, .5, .05, a, true);
-    }
-  }
-
-  for (const d of departments) {
-    const g = new Group();
-    g.position.set(d.x, 0, d.z);
-    world.scene.add(g);
-
-    world.box(g, 0, .08, 0, 5.1, .18, 4.55, '#303732');
-    world.box(g, 0, 1.35, 0, 4.25, 2.55, 3.65, '#1a211d');
-    trim(g, d.accent);
-    decorate(g, d);
-
-    const halo = world.ring(g, 0, .18, 0, 2.8, d.accent);
-    halo.visible = false;
-    const record = world.bind(g, d.page, null, d.name);
-    record.department = d;
-    d.group = g;
-    d.halo = halo;
-    d.record = record;
-
-    const label = document.createElement('div');
-    label.className = 'world-label';
-    label.dataset.department = d.id;
-    label.innerHTML = `<span>${d.name}</span><small>${d.subtitle}</small><em></em>`;
-    worldLabels.append(label);
-    d.labelEl = label;
-  }
-
-  function missionReady() {
-    return state.missions().filter((m) =>
-      !state.s.quests.claims.includes(m[0]) &&
-      (state.s.quests[m[1]][m[2]] || 0) >= m[3]
-    ).length;
-  }
-
-  function affordableUpgrades() {
-    let total = 0;
-    for (const n of nodes) {
-      if (n.tree !== 'main') continue;
-      const level = state.s.skills[n.id] || 0;
-      if (level >= n.max) continue;
-      try {
-        if (state.available(n) && state.s.points >= state.nodeCost(n)) total++;
-      } catch {}
-    }
-    return total;
-  }
-
-  function departmentStatus(d) {
-    const s = state.s;
-    if (d.id === 'upgrade') {
-      const n = affordableUpgrades();
-      return { text: n ? `${n} upgrade${n === 1 ? '' : 's'} affordable` : `${s.points} skill points available`, attention: n > 0 };
-    }
-    if (d.id === 'factory') {
-      const levels = s.machines.reduce((a, b) => a + b, 0);
-      return { text: state.fx.automation ? `${levels} machine levels · ${state.fmt(state.cps)}/s` : 'Automation research required', attention: false };
-    }
-    if (d.id === 'mission') {
-      const n = missionReady();
-      return { text: n ? `${n} contract reward${n === 1 ? '' : 's'} ready` : 'Contracts tracked', attention: n > 0 };
-    }
-    if (d.id === 'archive') return { text: `${s.collected.length} / 50 energy shards`, attention: s.collected.length >= 45 && s.collected.length < 50 };
-    if (d.id === 'arcade') return { text: `${s.tokens} arcade tokens`, attention: false };
-    if (d.id === 'research') {
-      if (s.researchJob) {
-        const done = Date.now() >= s.researchJob.end;
-        return { text: done ? 'Research complete!' : 'Research in progress', attention: done };
-      }
-      return { text: 'Research bay idle', attention: false };
-    }
-    if (d.id === 'workers') {
-      const ready =
-        (!s.npcClaims.includes('engineer') && s.lifetime >= 100000 ? 1 : 0) +
-        (!s.npcClaims.includes('scientist') && Object.keys(s.skills).length >= 12 ? 1 : 0) +
-        (!s.npcClaims.includes('technician') && s.machines.reduce((a,b)=>a+b,0) >= 25 ? 1 : 0) +
-        (!s.npcClaims.includes('explorer') && s.discovered.length >= 6 ? 1 : 0);
-      return { text: ready ? `${ready} assignment${ready === 1 ? '' : 's'} ready` : 'Crew assignments', attention: ready > 0 };
-    }
-    if (d.id === 'warehouse') return { text: `${state.offlineHours}h reserve · ${s.collected.length} shards`, attention: false };
-    if (d.id === 'market') return { text: `${s.dust} stardust · ${s.droneCopies.reduce((a,b)=>a+b,0)} drones`, attention: false };
-    if (d.id === 'treasury') return { text: `+${state.fmt(state.cps)}/s · ${state.fmt(s.energy)} energy`, attention: false };
-    if (d.id === 'quantum') {
-      const ready = s.run >= state.rebirthRequirement;
-      return { text: ready ? `Rebirth ready · +${state.fmt(state.rebirthGain)} cores` : `${state.fmt(s.run)} / ${state.fmt(state.rebirthRequirement)}`, attention: ready };
-    }
-    return { text: `${s.achievements.length} achievements · settings`, attention: false };
-  }
-
-  let statusClock = 0;
-  function updateDepartmentVisuals(dt = .016) {
-    statusClock += dt;
-    const hovered = world.current?.department || null;
-    const selected = ui.opened ? ui._activeDepartment || departmentByPage.get(ui.page) : null;
-
-    for (const d of departments) {
-      const isHover = hovered === d;
-      const isSelected = selected === d;
-      const targetScale = isHover ? 1.045 : isSelected ? 1.025 : 1;
-      const next = state.s.settings.reduced
-        ? targetScale
-        : d.group.scale.x + (targetScale - d.group.scale.x) * .22;
-      d.group.scale.setScalar(next);
-      d.halo.visible = isHover || isSelected;
-
-      d.labelEl.classList.toggle('hovered', isHover);
-      d.labelEl.classList.toggle('selected', isSelected);
-
-      const p = d.group.position.clone();
-      d.group.getWorldPosition(p);
-      p.y += 4.45;
-      p.project(world.camera);
-      const visible = p.z > -1 && p.z < 1 && p.x > -1.12 && p.x < 1.12 && p.y > -1.12 && p.y < 1.12 && world.size < 78;
-      if (visible) {
-        d.labelEl.style.left = `${(p.x * .5 + .5) * innerWidth}px`;
-        d.labelEl.style.top = `${(-p.y * .5 + .5) * innerHeight}px`;
-        d.labelEl.style.setProperty('--distance-opacity', String(Math.max(.38, 1 - Math.max(0, world.size - 46) / 42)));
-      } else {
-        d.labelEl.style.setProperty('--distance-opacity', '0');
-      }
-    }
-
-    if (statusClock > .3) {
-      statusClock = 0;
-      for (const d of departments) {
-        const status = departmentStatus(d);
-        const em = d.labelEl.querySelector('em');
-        em.textContent = status.text;
-        d.labelEl.classList.toggle('attention', status.attention);
-      }
-    }
-  }
-
-  const originalWorldUpdate = world.update.bind(world);
-  world.update = function redesignedWorldUpdate(dt) {
-    originalWorldUpdate(dt);
-    updateDepartmentVisuals(dt);
-  };
-
-  const originalNav = ui.nav.bind(ui);
-  ui.nav = function noPermanentSystemNav() {
-    $('menuNav').innerHTML = '';
-  };
-  originalNav();
-  $('menuNav').innerHTML = '';
-
-  const originalControlView = ui.controlView.bind(ui);
-  const originalMissionsView = ui.missionsView.bind(ui);
-  const originalCollectionView = ui.collectionView.bind(ui);
-  const originalArcadeView = ui.arcadeView.bind(ui);
-  const originalResearchView = ui.researchView.bind(ui);
-  const originalRebirthView = ui.rebirthView.bind(ui);
-  const originalDronesView = ui.dronesView.bind(ui);
-  const originalSettingsView = ui.settingsView.bind(ui);
-
-  function intro(kicker, title, copy, metrics = '') {
-    return `<div class="department-intro">
+var NovaRedesign=(()=>{var J=Object.defineProperty;var he=Object.getOwnPropertyDescriptor;var ge=Object.getOwnPropertyNames;var be=Object.prototype.hasOwnProperty;var ye=(i,e)=>{for(var r in e)J(i,r,{get:e[r],enumerable:!0})},ve=(i,e,r,c)=>{if(e&&typeof e=="object"||typeof e=="function")for(let R of ge(e))!be.call(i,R)&&R!==r&&J(i,R,{get:()=>e[R],enumerable:!(c=he(e,R))||c.enumerable});return i};var Ee=i=>ve(J({},"__esModule",{value:!0}),i);var $e={};ye($e,{applyRedesign:()=>Te});var ae="nova-foundry-3d-v2";var re=[["power","Power","#6ad9ff","Manual energy and reactor control"],["auto","Automation","#77edbd","Machines, workers and passive income"],["luck","Fortune","#f4ce78","Critical energy and rare signals"],["offline","Offline","#aaa3ff","Storage and away-time production"],["rebirth","Rebirth","#f799c9","Faster, stronger new beginnings"],["explore","Exploration","#ffac79","Rooms, research and new worlds"]],xe=[["Stronger pulse","Compression","Critical energy","Combo capacitor","Overcharged interaction","Critical mastery","Focused beam","Core resonance","Critical overload","Nuclear fingers","Plasma feedback","Hyperactive core","GOD TOUCH","Solar hands","Pulse echo","Reactor mastery"],["Basic automation","Faster generators","Improved machinery","Robot workers","AI management","Self-improving machines","Assembly line","Precision bearings","Autonomous empire","Machine empire","Quantum timing","Distributed network","FULL AUTOMATION","Machine learning","Clean energy","Industrial mastery"],["Lucky energy","Better criticals","Lucky generator","Golden signal","Jackpot energy","Fortune master","Stardust pockets","Lucky research","Impossible luck","Crystal magnet","Rare circuitry","Double salvage","GOLDEN UNIVERSE","Probability wave","Fortunate pulse","Fortune mastery"],["Offline production","Better storage","Efficient shutdown","Backup cells","Extended storage","Sleep mode","Coolant reserve","Battery farm","Eternal production","Deep sleep","Hibernate","Long-term archive","NEVER OFFLINE","Chrono vault","Time crystal","Storage mastery"],["Rebirth knowledge","Permanent energy","Faster recovery","Core affinity","Rebirth memory","Eternal skill","Quantum rhythm","Rapid reboot","Rebirth master","Ancestral spark","Machine memory","Clean restart","IMMORTAL CORE","Quantum yield","Core scientist","Prestige mastery"],["Facility expansion","Survey scanner","Research access","Factory logistics","Deep facility","Quantum access","Launch technology","Wayfinding","Orbital engineering","Planetary survey","Dimensional research","Fast travel network","MULTIVERSE ACCESS","Explorer insight","Research network","Frontier mastery"]],Re={"power:0":["+10% manual energy per level.",{click:.1}],"power:1":["+25% manual energy.",{click:.25}],"power:3":["Maximum combo +1\xD7.",{combo:1}],"auto:1":["+15% passive income.",{passive:.15}],"auto:2":["+25% passive income.",{passive:.25}],"auto:4":["+50% passive income.",{passive:.5}],"luck:0":["+2% critical chance.",{crit:.02}],"luck:1":["Critical multiplier +5\xD7.",{critMult:5}],"rebirth:8":["+100% quantum yield.",{prestige:1}],"explore:1":["Shows uncollected energy shards on the minimap.",{scanner:1}],"power:2":["Critical interactions unlocked at 5% chance.",{critUnlock:1}],"power:4":["Every tenth interaction earns 5\xD7 energy.",{tenth:1}],"power:5":["+10% critical chance.",{crit:.1}],"power:8":["Critical multiplier +5\xD7.",{critMult:5}],"power:9":["Manual energy +500%.",{click:5}],"power:11":["Manual energy \xD710, passive energy \xD70.5.",{manualKeystone:1}],"power:12":["Manual energy \xD78.",{god:1}],"auto:0":["Unlocks machine production and construction.",{automation:1}],"auto:3":["Robot workers join the facility; +2 automatic pulses/sec.",{workers:1,autoClicks:2}],"auto:5":["Passive income grows +1% per active minute, up to +100%.",{selfImprove:1}],"auto:9":["Passive energy \xD75, manual energy \xD70.2.",{machineKeystone:1}],"auto:12":["Passive production \xD78.",{fullAuto:1}],"luck:2":["Machines have a 5% chance each second to produce a bonus tick.",{luckyMachine:1}],"luck:3":["Golden drones can visit your facility.",{golden:1}],"luck:4":["Each manual pulse has a 0.2% chance of a 100\xD7 jackpot.",{jackpot:1}],"luck:8":["Rare event rewards \xD72.",{rare:1}],"luck:9":["World shards can be collected from farther away.",{magnet:1}],"luck:12":["Critical chance +15%; event rewards \xD72.",{crit:.15,rare:1}],"offline:0":["Unlock offline earnings at 25% efficiency.",{offline:.25}],"offline:1":["Offline storage +4 hours.",{hours:4}],"offline:2":["Offline efficiency +25%.",{offline:.25}],"offline:4":["Offline storage +12 hours.",{hours:12}],"offline:5":["Offline efficiency +25%.",{offline:.25}],"offline:8":["Offline storage +24 hours (48h maximum).",{hours:24}],"offline:12":["Offline efficiency becomes 100%.",{neverOffline:1}],"rebirth:1":["Each rebirth starts with 500 extra energy.",{startEnergy:500}],"rebirth:4":["Keep 10% of each machine level through rebirth.",{memory:.1}],"rebirth:5":["Earn 3 extra Skill Points each rebirth.",{rebirthPoints:3}],"rebirth:10":["Start with one extra collector per rebirth.",{startMachine:1}],"rebirth:12":["Quantum core passive bonus doubles.",{immortal:1}],"explore:0":["Allows the Generator Hall to open at 250 run energy.",{access:1}],"explore:2":["Allows the Research Wing to open at 3K run energy.",{research:1}],"explore:3":["Allows the Factory to open at 1.5K run energy.",{factory:1}],"explore:4":["Allows the Deep Facility to open at 10K run energy.",{deep:1}],"explore:5":["Allows the Quantum Chamber to open at 25K run energy.",{quantum:1}],"explore:6":["Allows the Launch Platform to open at 100K run energy.",{launch:1}],"explore:8":["Allows the Orbital Station to open at 1M run energy.",{orbital:1}],"explore:9":["Allows the Alien Outpost to open at 10M run energy.",{planet:1}],"explore:10":["Allows the Dimensional Realm to open at 100M run energy.",{dimension:1}],"explore:11":["Overview network: +25% all energy. All open plots can always be focused.",{fastTravel:1,global:.25}],"explore:12":["New Reality becomes available after BREAK REALITY.",{multiverse:1}]},O=[],ne=[[1,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2],[3,2],[0,3],[1,3],[2,3],[3,3],[1,4],[0,5],[1,5],[2,5]],ke=[[],[0],[0],[0],[1],[2],[2],[3],[4],[5],[6],[7],[8,9,10],[12],[12],[12]];re.forEach((i,e)=>xe[e].forEach((r,c)=>{let R,S,y=Re[i[0]+":"+c];if(y)[S,R]=y;else{let v=["click","passive","crit","offlineProduction","prestige","xp"][e],M=v==="crit"?.015:c>12?.3:.15;R={[v]:M},S=`+${Math.round(M*100)}% ${["manual energy","passive income","critical chance","offline-only production","quantum yield","XP gain"][e]} per level.`}O.push({id:`${i[0]}-${c}`,name:r,desc:S,branch:i[0],tree:"main",color:i[2],x:e*350+ne[c][0]*76+36,y:140+ne[c][1]*158,max:e===0&&c===0?10:y?1:5,cost:c===12?10:c>=8?3:c>=4?2:1,requires:ke[c].map(v=>`${i[0]}-${v}`),effects:R,keystone:[11,12].includes(c)})}));var Ae=[["Quantum automation",["auto-4","power-5"],{luckyMachine:1,passive:.5},"Machine bonus ticks unlocked and +50% passive energy."],["Eternal reactor",["offline-8","rebirth-12"],{memory:.2},"Keep an additional 20% of machine levels after rebirth."],["Explorer drones",["auto-3","explore-4"],{dronePower:1},"Equipped drone bonuses double."],["Sleeping giant",["offline-5","power-9"],{offlineProduction:1},"Offline-only production +100%."],["Fortunate rebirth",["luck-8","rebirth-8"],{prestige:1},"Quantum yield +100%."],["Dimensional network",["explore-10","auto-12"],{global:2},"All energy +200%."]];Ae.forEach((i,e)=>O.push({id:"cross-"+e,name:i[0],requires:i[1],effects:i[2],desc:i[3],tree:"main",branch:"cross",color:"#dce7ff",x:110+e*335,y:1220,max:1,cost:8,keystone:!0}));var Se=[["Permanent production",{global:.1},"+10% all energy per level."],["Faster beginning",{startEnergy:1e4},"+10K starting energy per level."],["Core memory",{startMachine:1},"+1 starting collector per level."],["Quantum knowledge",{rebirthPoints:1},"+1 Skill Point per rebirth per level."],["Rebirth efficiency",{prestige:.15},"+15% quantum yield per level."],["Permanent criticals",{crit:.01},"+1% critical chance per level."],["Machine memory",{memory:.02},"Keep +2% machine levels per level."],["Quantum cooling",{click:.25},"+25% manual energy per level."],["Stellar factory",{passive:.25},"+25% passive energy per level."],["Timeless network",{hours:2},"+2h offline capacity per level, up to 48h."],["Ancestral fortune",{rare:.1},"+10% rare event rewards per level."],["Quantum architect",{global:.5},"+50% all energy per level."]];Se.forEach((i,e)=>O.push({id:"q-"+e,name:i[0],effects:i[1],desc:i[2],tree:"quantum",branch:"quantum",color:"#f4ce78",x:180+e%3*220,y:130+Math.floor(e/3)*170,max:100,cost:1+Math.floor(e/3),requires:e<3?[]:["q-"+(e-3)],keystone:e>=9}));var Ce=[["Infinite energy",{global:2},"+200% all energy."],["Rebirth memory+",{memory:.2},"Keep +20% of machine levels."],["Dimensional production",{dimensionProduction:1},"+100% passive income per ascension."],["Temporal automation",{temporal:1},"Production continues during rebirth animations."],["Infinite knowledge",{levelPoints:1},"+1 additional Skill Point on future level-ups."],["Reality armour",{bossDamage:2},"+200% boss damage."],["Infinite storage",{neverOffline:1},"100% offline efficiency."],["BREAK REALITY",{breakReality:1},"Unlock New Reality at 3 ascensions with Multiverse Access."]];Ce.forEach((i,e)=>O.push({id:"a-"+e,name:i[0],effects:i[1],desc:i[2],tree:"ascension",branch:"ascension",color:"#c0a1ff",x:220+e%2*260,y:130+Math.floor(e/2)*180,max:1,cost:e===7?3:1,requires:e<2?[]:["a-"+(e-2)],keystone:e===7}));re.forEach((i,e)=>[0,1].forEach(r=>O.push({id:`m-${e}-${r}`,name:i[1]+(r?" transcendence":" mastery"),desc:`+${r?40:20}% ${["manual energy","passive income","rare rewards","offline-only production","quantum yield","XP"][e]} per level. Unlimited research; costs increase each level.`,effects:{[["click","passive","rare","offlineProduction","prestige","xp"][e]]:r?.4:.2},tree:"mastery",branch:i[0],color:i[2],x:110+e*180,y:180+r*230,max:1e6,cost:r?5:3,requires:r?[`m-${e}-0`]:[],keystone:!!r})));var we=Object.fromEntries(O.map(i=>[i.id,i])),j=[{id:"lab",name:"Origin Laboratory",x:0,z:0,need:0,flag:null,color:"#72d8ee",subtitle:"Where a universe begins."},{id:"generator",name:"Generator Hall",x:28,z:0,need:250,flag:"access",color:"#78edbc",subtitle:"The first step toward independence."},{id:"factory",name:"Robot Factory",x:56,z:0,need:1500,flag:"factory",color:"#f4c67b",subtitle:"An empire in motion."},{id:"research",name:"Research Wing",x:28,z:-28,need:3e3,flag:"research",color:"#a79df8",subtitle:"Curiosity becomes power."},{id:"quantum",name:"Quantum Chamber",x:56,z:-28,need:25e3,flag:"quantum",color:"#f49fcb",subtitle:"Beyond ordinary physics."},{id:"deep",name:"Deep Facility",x:0,z:-28,need:1e4,flag:"deep",color:"#67d7bf",subtitle:"Forgotten infrastructure. New possibilities."},{id:"launch",name:"Launch Platform",x:-28,z:0,need:1e5,flag:"launch",color:"#efb086",subtitle:"Your world is getting smaller."},{id:"orbital",name:"Orbital Station",x:-56,z:0,need:1e6,flag:"orbital",color:"#9ccdfc",subtitle:"A foundry among the stars."},{id:"planet",name:"Alien Outpost",x:-56,z:-28,need:1e7,flag:"planet",color:"#aeed9c",subtitle:"A different sun. The same ambition."},{id:"dimension",name:"Dimensional Realm",x:-28,z:-28,need:1e8,flag:"dimension",color:"#dc99ff",subtitle:"The edge of what is possible."}],Z=[["collector","Energy collector","lab",20,1.15,1],["generator","Ion generator","generator",150,1.16,9],["fusion","Fusion engine","factory",1800,1.17,110],["research","Photon processor","research",12e3,1.18,800],["deep","Dark matter drill","deep",65e3,1.19,4500],["quantum","Quantum reactor","quantum",3e5,1.2,24e3],["launch","Stellar turbine","launch",2e6,1.2,17e4],["orbital","Dyson relay","orbital",2e7,1.21,18e5],["planet","Planetary engine","planet",3e8,1.22,3e7],["dimension","Dimensional engine","dimension",5e9,1.23,5e8]].map((i,e)=>({id:i[0],name:i[1],area:i[2],base:i[3],growth:i[4],rate:i[5],i:e}));function ie({world:i,state:e,ui:r},c){let R=i.core.constructor,S=[];function y(a,l,m,g,h=7.2,b=6.6){let u=new R;u.userData.plotId=l,u.userData.plotName=m,a.add(u);let p=i.box(u,0,-.15,0,h,.18,b,"#35443d");i.box(u,0,-.035,0,h-.3,.06,b-.3,"#26332e");for(let E of[-h/2,h/2])i.box(u,E,.015,0,.09,.12,b,"#829083");i.box(u,0,.015,-b/2,h,.12,.09,"#829083");for(let E of[-1,1])i.box(u,E*(h/4+.45),.015,b/2,h/2-.9,.12,.09,"#829083"),i.box(u,E*.9,.13,b/2,.16,.3,.16,g,!0);i.box(u,0,-.015,b/2+.45,1.65,.06,.9,"#667267");let H=i.label(u,m.toUpperCase(),0,.3,b/2-.48,h-.6);return H.material.opacity=.85,S.push({id:l,name:m,parent:a,ground:u,surface:p,width:h,depth:b}),u}for(let a of j){let l=i.plotGroups[a.id];for(let m of l.children)m!==i.areaGroups[a.id]&&(m.visible=!1)}for(let a of i.scene.children)a.isMesh&&a.geometry===i.geometry.box&&Math.abs(a.position.y+.03)<.001&&(a.visible=!1);for(let a of c){a.x=Math.abs(a.x)>10?Math.sign(a.x)*18:Math.sign(a.x)*6,a.z=a.z>4?10:a.z<-4?-10:0,a.group.position.set(a.x,0,a.z);let l=y(a.group,`department-${a.id}`,a.name,a.accent);l.traverse(m=>{m.isMesh&&(m.userData.interactable=a.record)}),a.plot=l}let v=i.machineGroups.map((a,l)=>{let m=Z[l],g=(l%5-2)*12,h=22+Math.floor(l/5)*14;i.scene.attach(a),a.position.set(g,0,h),a.children.filter(E=>E.isSprite).forEach(E=>E.visible=!1);let b=y(a,`generator-${l}`,m.name,"#c7b777",9.3,9),u;a.traverse(E=>{u||(u=E.userData?.interactable)}),b.traverse(E=>{E.isMesh&&(E.userData.interactable=u)});let p=i.label(b,"LOCKED PLOT",0,2.4,0,3.8);return{machine:a,plot:b,record:u,i:l,area:m.area,lockedSign:p}}),M=y(i.core,"reactor","Central reactor","#7dbbb1",4.3,5.8),$;i.core.traverse(a=>{$||($=a.userData?.interactable)}),M.traverse(a=>{a.isMesh&&(a.userData.interactable=$)});let C=new R;i.scene.add(C);for(let a of[-14.4,-5,5,14.4])i.box(C,0,-.16,a,47,.06,1.15,"#657365");for(let a of[-24,-12,12,24])i.box(C,a,-.16,0,1.15,.06,29,"#657365");for(let a of[16,29,42])i.box(C,0,-.16,a,60,.06,1.4,"#657365");for(let a of[-30,-18,-6,6,18,30])i.box(C,a,-.16,29,1.15,.06,26,"#657365");i.box(C,0,-.16,14.2,2,.06,3.7,"#657365"),i.box(C,0,-.16,43,60,.06,1,"#47584b");for(let a=0;a<i.shards.length;a++){let l=j[Math.floor(a/5)].id,m=v.find(g=>g.area===l);m&&i.shards[a].position.set(m.machine.position.x-3.2+a%5*1.6,.5,m.machine.position.z-3.5)}i.npcs.forEach((a,l)=>{i.scene.attach(a);let m=v[[0,3,2,6][l]||0];a.position.set(m.machine.position.x+3,0,m.machine.position.z+2.5)});function L(){for(let a of j)i.plotGroups[a.id].userData.sealed.visible=!1;for(let a of v){let l=e.s.areas.includes(a.area);a.machine.visible=!0,a.machine.userData.built.visible=l&&e.s.machines[a.i]>0,a.machine.userData.scaffold.visible=!a.machine.userData.built.visible,a.machine.userData.scaffold.children.filter(m=>m.isSprite).forEach(m=>m.visible=l),a.lockedSign.visible=!l,a.record.action=l?"machine":"locked",a.record.data=l?a.i:a.area,a.record.label=`${Z[a.i].name} \xB7 ${l?"dedicated generator plot":"locked plot"}`,a.plot.userData.unlocked=l}i.renderer.shadowMap.needsUpdate=!0}let K=i.sync.bind(i);i.sync=()=>{K(),L(),N()},L();let T=()=>Math.max(64,61/(innerWidth/innerHeight)),P=i.teleport.bind(i);i.teleport=a=>{P(a);let l=v.find(m=>m.area===a);a==="lab"?(i.goal.set(0,0,12),i.goalSize=T()):l&&(i.goal.copy(l.machine.position),i.goalSize=22)},i.goal.set(0,0,12),i.target.copy(i.goal),i.size=i.goalSize=T(),i.frame(),i.resize();let Y=i.update.bind(i);i.update=a=>{Y(a),i.goal.z=Math.max(-45,Math.min(48,i.goal.z))},i.lots=S,i.generatorLots=v;let D=new Map(c.map(a=>[a.id,[a.x,a.z]]));function U(a){let l={};for(let g of c){let h=a?.[g.id];Array.isArray(h)&&h.length===2&&h.every(Number.isFinite)&&Math.abs(h[0])<=24&&h[1]>=-18&&h[1]<=12&&(l[g.id]=h)}let m=c.map(g=>({x:l[g.id]?.[0]??D.get(g.id)[0],z:l[g.id]?.[1]??D.get(g.id)[1],width:7.2,depth:6.6}));m.push({x:0,z:-2,width:4.3,depth:5.8});for(let g=0;g<m.length;g++)for(let h=g+1;h<m.length;h++){let b=m[g],u=m[h];if(Math.abs(b.x-u.x)<(b.width+u.width)/2&&Math.abs(b.z-u.z)<(b.depth+u.depth)/2)return{}}return l}let V=e.validate.bind(e);e.validate=a=>{let l=V(a);return l.plotLayout=U(a.plotLayout),l};try{let a=JSON.parse(localStorage.getItem(ae)||"null");e.s.plotLayout=U(a?.plotLayout)}catch{e.s.plotLayout={}}function N(){for(let a of c){let l=e.s.plotLayout?.[a.id]||D.get(a.id);[a.x,a.z]=l,a.group.position.set(a.x,0,a.z)}i.renderer.shadowMap.needsUpdate=!0}N();let I=!1,A=null,z=r.adminView.bind(r);r.adminView=()=>`<div class="plot-arrange-entry"><button data-action="plotedit">Arrange building plots</button><span>Each building and generator has its own dedicated lot.</span></div>${z()}`;let B=r.action.bind(r);function F(){I=!1,A=null,document.getElementById("plotToolbar")?.remove(),e.save()}r.action=async a=>{if(a.action==="plotedit"){r.close(),I=!0;let l=document.createElement("div");l.id="plotToolbar",l.innerHTML='<span id="plotHint">Select a department, then click clear ground to move its plot.</span><button data-action="plotreset">Reset layout</button><button data-action="plotdone">Done</button>',document.body.append(l);return}if(a.action==="plotdone"){F();return}if(a.action==="plotreset"){e.s.plotLayout={},N(),A=null,e.save();return}return B(a)};let ee=r.interact.bind(r);r.interact=a=>{if(I){a.department?(A=a.department,document.getElementById("plotHint").textContent=`Move ${A.name}: click clear ground in the administration district.`):r.notice("Generator plots stay in the production district. Select a department to move.");return}return ee(a)},e.on((a,l)=>{var b;if(a!=="groundclick"||!I||!A||!l)return;let m=Math.round(l.x),g=Math.round(l.z);if(Math.abs(m)>24||g<-18||g>12){r.notice("Keep departments inside the administration district.");return}if(S.some(u=>{if(u.parent===A.group)return!1;let p=u.parent.position;return Math.abs(m-p.x)<(7.2+u.width)/2+.6&&Math.abs(g-p.z)<(6.6+u.depth)/2+.6})){r.notice("Leave room between this plot and its neighbours.");return}(b=e.s).plotLayout??(b.plotLayout={}),e.s.plotLayout[A.id]=[m,g],N(),A=null,e.save(),document.getElementById("plotHint").textContent="Plot moved. Select another department, or choose Done."}),document.addEventListener("keydown",a=>{a.code==="Escape"&&I&&F()});let _=r.paint.bind(r);r.paint=()=>{_(),e.fx.automation&&!e.s.machines[0]&&(document.getElementById("objectiveLabel").textContent="YOUR FIRST GENERATOR PLOT",document.getElementById("objectiveText").textContent="Click the Energy collector plot in the generator district, or manage it from the Machine Hall.")}}function Te(i){if(!i||window.__NOVA_REDESIGN_APPLIED__)return;window.__NOVA_REDESIGN_APPLIED__=!0;let{state:e,world:r,ui:c,nodes:R=[],areas:S=[]}=i,y=n=>document.getElementById(n),v=y("menu"),M=y("menuContent"),$=y("menuTitle"),C=y("worldLabels");document.body.classList.add("department-redesign"),r.hoverRing.material.opacity=0;function L(n){let t=null;return n?.traverse?.(s=>{!t&&s.userData?.interactable&&(t=s.userData.interactable)}),t}let K=new Set(["tree","arcade","research","rebirth","drones","challenges","travel","daily"]);for(let n of r.interactables){let t=L(n);t&&K.has(t.action)&&(n.visible=!1,t.retiredNavigation=!0)}let T=[{id:"workers",page:"workers",name:"WORKER OFFICE",subtitle:"People & assignments",tooltip:"Manage workers and assignments",x:-14,z:8.5,accent:"#d8b75d",kind:"workers"},{id:"mission",page:"missions",name:"MISSION CONTROL",subtitle:"Contracts & objectives",tooltip:"Review contracts and objectives",x:-5,z:8.5,accent:"#d8814f",kind:"mission"},{id:"archive",page:"collection",name:"FOUNDRY ARCHIVE",subtitle:"Collection & discoveries",tooltip:"Browse discoveries and collection",x:5,z:8.5,accent:"#6ea77c",kind:"archive"},{id:"arcade",page:"arcade",name:"ARCADE",subtitle:"Minigames & scores",tooltip:"Play foundry minigames",x:14,z:8.5,accent:"#a071c5",kind:"arcade"},{id:"treasury",page:"treasury",name:"TREASURY",subtitle:"Economy & performance",tooltip:"Review foundry finances",x:-14,z:.5,accent:"#caa45b",kind:"treasury"},{id:"upgrade",page:"tree",name:"UPGRADE LAB",subtitle:"Improve your foundry",tooltip:"Manage the skill tree",x:-6,z:.5,accent:"#57b9b3",kind:"upgrade"},{id:"factory",page:"control",name:"MACHINE HALL",subtitle:"Machines & production",tooltip:"Manage machines and production",x:6,z:.5,accent:"#d79a53",kind:"factory"},{id:"market",page:"market",name:"MARKETPLACE",subtitle:"Drones & specialist goods",tooltip:"Trade for foundry equipment",x:14,z:.5,accent:"#69a990",kind:"market"},{id:"admin",page:"admin",name:"ADMINISTRATION",subtitle:"Records & settings",tooltip:"Open administration systems",x:-14,z:-8.5,accent:"#9ba69c",kind:"admin"},{id:"warehouse",page:"warehouse",name:"WAREHOUSE",subtitle:"Inventory & reserves",tooltip:"Inspect stored resources",x:-5,z:-8.5,accent:"#89989c",kind:"warehouse"},{id:"quantum",page:"rebirth",name:"QUANTUM FACILITY",subtitle:"Rebirth & ascension",tooltip:"Manage prestige progression",x:5,z:-8.5,accent:"#9b73d0",kind:"quantum"},{id:"research",page:"research",name:"RESEARCH CENTRE",subtitle:"New technology",tooltip:"Run research projects",x:14,z:-8.5,accent:"#668fc8",kind:"research"}],P=new Map(T.map(n=>[n.page,n])),Y=r.core.constructor;function D(n,t){r.box(n,0,2.42,0,4.25,.13,3.65,t,!0),r.box(n,0,.46,1.84,3.65,.12,.08,t,!0);for(let s of[-1.15,1.15])r.box(n,s,1.35,1.83,.75,.78,.06,"#668b8b",!0)}function U(n,t){let s=t.accent;if(t.kind==="upgrade")r.cylinder(n,0,3.05,0,.18,1.25,"#5f6f69"),r.sphere(n,0,3.68,0,.42,s,!0),r.ring(n,0,3.68,0,.72,s,.35),r.ring(n,0,3.68,0,.94,s,1.25);else if(t.kind==="factory"){for(let o of[-1.25,1.25])r.cylinder(n,o,3.05,-.85,.28,1.65,"#59605b"),r.box(n,o,3.92,-.85,.72,.12,.72,s,!0);r.box(n,0,.9,1.9,2.35,1.05,.12,"#555d58");for(let o=-2;o<=2;o++)r.box(n,o*.45,.9,1.98,.05,.95,.03,"#252b28")}else if(t.kind==="mission"){r.cylinder(n,0,3.05,-.25,.1,1.45,"#667069");let o=r.ring(n,0,3.78,-.25,.82,s,.82);o.rotation.z=.45,r.sphere(n,0,3.78,-.25,.16,s,!0),r.box(n,0,1.1,1.92,2.15,.86,.08,"#704d38")}else if(t.kind==="archive"){r.box(n,0,1.28,1.91,2.7,1.18,.08,"#6b8f81",!0),r.box(n,0,2.85,0,2.9,.24,2.5,"#29312c");for(let o of[-1.55,1.55])r.box(n,o,1.3,1.88,.28,1.5,.12,s,!0)}else if(t.kind==="arcade"){r.box(n,0,2.8,1.72,3.15,.52,.14,"#33233f"),r.box(n,0,2.8,1.81,2.45,.18,.05,s,!0);for(let o of[-1.4,1.4])r.ring(n,o,1.35,1.91,.42,s,0)}else if(t.kind==="research"){r.cylinder(n,0,2.9,0,.58,.5,"#596c77");for(let o=0;o<3;o++)r.ring(n,0,3.15+o*.25,0,.72+o*.14,s,o*.65);r.sphere(n,0,3.42,0,.28,s,!0)}else if(t.kind==="workers"){r.box(n,0,3.05,0,2.9,.7,2.65,"#2c332d"),r.box(n,0,3.42,1.35,2.1,.18,.12,s,!0);for(let o of[-1.35,1.35])r.box(n,o,1.1,1.91,.35,1.6,.08,"#8a7452")}else if(t.kind==="warehouse"){r.box(n,0,1.18,1.92,2.9,1.45,.1,"#727d7a");for(let o=-2;o<=2;o++)r.box(n,o*.55,1.18,1.99,.05,1.35,.03,"#303733");for(let o of[-1.45,1.45])r.box(n,o,.48,-1.35,.82,.82,.82,"#6e5c46"),r.box(n,o,.91,-1.35,.72,.08,.72,s)}else if(t.kind==="market"){r.box(n,0,2.82,0,4.55,.18,3.95,s,!0);for(let o of[-1.45,0,1.45])r.box(n,o,1.05,1.9,1,.85,.12,"#52635b");r.ring(n,0,3.32,0,.65,s,0)}else if(t.kind==="treasury")r.cylinder(n,0,1.25,1.9,1.08,.18,"#7c7562"),r.ring(n,0,1.25,2.02,.82,s,0),r.box(n,0,3.02,0,3.15,.5,2.6,"#262c28"),r.box(n,0,3.31,1.38,2.2,.13,.08,s,!0);else if(t.kind==="quantum"){r.cylinder(n,0,2.95,0,.72,.42,"#555461"),r.sphere(n,0,3.35,0,.58,s,!0);for(let o=0;o<3;o++)r.ring(n,0,3.35,0,.9+o*.18,s,.4+o*.65)}else t.kind==="admin"&&(r.box(n,0,3,0,3,.68,2.65,"#2c322e"),r.cylinder(n,0,3.95,-.3,.08,1.3,"#6e7770"),r.box(n,.55,4.35,-.3,1.1,.5,.05,s,!0))}for(let n of T){let t=new Y;t.position.set(n.x,0,n.z),r.scene.add(t),r.box(t,0,.08,0,5.1,.18,4.55,"#303732"),r.box(t,0,1.35,0,4.25,2.55,3.65,"#1a211d"),D(t,n.accent),U(t,n);let s=r.ring(t,0,.18,0,2.8,n.accent);s.visible=!1;let o=r.bind(t,n.page,null,n.name);o.department=n,n.group=t,n.halo=s,n.record=o;let d=document.createElement("div");d.className="world-label",d.dataset.department=n.id,d.innerHTML=`<span>${n.name}</span><small>${n.subtitle}</small><em></em>`,C.append(d),n.labelEl=d}function V(){return e.missions().filter(n=>!e.s.quests.claims.includes(n[0])&&(e.s.quests[n[1]][n[2]]||0)>=n[3]).length}function N(){let n=0;for(let t of R)if(!(t.tree!=="main"||(e.s.skills[t.id]||0)>=t.max))try{e.available(t)&&e.s.points>=e.nodeCost(t)&&n++}catch{}return n}function I(n){let t=e.s;if(n.id==="upgrade"){let s=N();return{text:s?`${s} upgrade${s===1?"":"s"} affordable`:`${t.points} skill points available`,attention:s>0}}if(n.id==="factory"){let s=t.machines.reduce((o,d)=>o+d,0);return{text:e.fx.automation?`${s} machine levels \xB7 ${e.fmt(e.cps)}/s`:"Automation research required",attention:!1}}if(n.id==="mission"){let s=V();return{text:s?`${s} contract reward${s===1?"":"s"} ready`:"Contracts tracked",attention:s>0}}if(n.id==="archive")return{text:`${t.collected.length} / 50 energy shards`,attention:t.collected.length>=45&&t.collected.length<50};if(n.id==="arcade")return{text:`${t.tokens} arcade tokens`,attention:!1};if(n.id==="research"){if(t.researchJob){let s=Date.now()>=t.researchJob.end;return{text:s?"Research complete!":"Research in progress",attention:s}}return{text:"Research bay idle",attention:!1}}if(n.id==="workers"){let s=(!t.npcClaims.includes("engineer")&&t.lifetime>=1e5?1:0)+(!t.npcClaims.includes("scientist")&&Object.keys(t.skills).length>=12?1:0)+(!t.npcClaims.includes("technician")&&t.machines.reduce((o,d)=>o+d,0)>=25?1:0)+(!t.npcClaims.includes("explorer")&&t.discovered.length>=6?1:0);return{text:s?`${s} assignment${s===1?"":"s"} ready`:"Crew assignments",attention:s>0}}if(n.id==="warehouse")return{text:`${e.offlineHours}h reserve \xB7 ${t.collected.length} shards`,attention:!1};if(n.id==="market")return{text:`${t.dust} stardust \xB7 ${t.droneCopies.reduce((s,o)=>s+o,0)} drones`,attention:!1};if(n.id==="treasury")return{text:`+${e.fmt(e.cps)}/s \xB7 ${e.fmt(t.energy)} energy`,attention:!1};if(n.id==="quantum"){let s=t.run>=e.rebirthRequirement;return{text:s?`Rebirth ready \xB7 +${e.fmt(e.rebirthGain)} cores`:`${e.fmt(t.run)} / ${e.fmt(e.rebirthRequirement)}`,attention:s}}return{text:`${t.achievements.length} achievements \xB7 settings`,attention:!1}}let A=0;function z(n=.016){A+=n;let t=r.current?.department||null,s=c.opened?c._activeDepartment||P.get(c.page):null;for(let o of T){let d=t===o,f=s===o,k=d?1.045:f?1.025:1,w=e.s.settings.reduced?k:o.group.scale.x+(k-o.group.scale.x)*.22;o.group.scale.setScalar(w),o.halo.visible=d||f,o.labelEl.classList.toggle("hovered",d),o.labelEl.classList.toggle("selected",f);let x=o.group.position.clone();o.group.getWorldPosition(x),x.y+=4.45,x.project(r.camera),x.z>-1&&x.z<1&&x.x>-1.12&&x.x<1.12&&x.y>-1.12&&x.y<1.12&&r.size<78?(o.labelEl.style.left=`${(x.x*.5+.5)*innerWidth}px`,o.labelEl.style.top=`${(-x.y*.5+.5)*innerHeight}px`,o.labelEl.style.setProperty("--distance-opacity",String(Math.max(.38,1-Math.max(0,r.size-46)/42)))):o.labelEl.style.setProperty("--distance-opacity","0")}if(A>.3){A=0;for(let o of T){let d=I(o),f=o.labelEl.querySelector("em");f.textContent=d.text,o.labelEl.classList.toggle("attention",d.attention)}}}let B=r.update.bind(r);r.update=function(t){B(t),z(t)};let F=c.nav.bind(c);c.nav=function(){y("menuNav").innerHTML=""},F(),y("menuNav").innerHTML="";let ee=c.controlView.bind(c),_=c.missionsView.bind(c),a=c.collectionView.bind(c),l=c.arcadeView.bind(c),m=c.researchView.bind(c),g=c.rebirthView.bind(c),h=c.dronesView.bind(c),b=c.settingsView.bind(c);function u(n,t,s,o=""){return`<div class="department-intro">
       <div>
-        <span class="department-kicker">${kicker}</span>
-        <h2>${title}</h2>
-        <p>${copy}</p>
+        <span class="department-kicker">${n}</span>
+        <h2>${t}</h2>
+        <p>${s}</p>
       </div>
-      ${metrics ? `<div class="dept-metrics">${metrics}</div>` : ''}
-    </div>`;
-  }
-
-  function metric(label, value, sub = '') {
-    return `<div class="dept-metric"><span>${label}</span><strong>${value}</strong>${sub ? `<small>${sub}</small>` : ''}</div>`;
-  }
-
-  ui.controlView = function factoryView() {
-    const machineRecords = world.machineGroups
-      .map((group) => interactionRecord(group))
-      .filter((r) => r?.action === 'machine')
-      .sort((a, b) => a.data - b.data);
-
-    const floor = machineRecords.map((r) => {
-      const i = Number(r.data);
-      const level = state.s.machines[i];
-      const parent = world.machineGroups[i]?.parent;
-      const areaEntry = Object.entries(world.areaGroups).find(([, g]) => g === parent);
-      const areaId = areaEntry?.[0] || 'lab';
-      const areaName = areas.find((a) => a.id === areaId)?.name || areaId;
-      const open = state.s.areas.includes(areaId);
-      const running = open && level > 0;
-      const status = !open ? 'OFFLINE' : running ? 'RUNNING' : 'IDLE';
-      const q1 = state.quote(i, 1);
-      const q10 = state.quote(i, 10);
-      const disabled1 = !state.fx.automation || !open || state.s.energy < q1.cost || q1.n < 1;
-      const disabled10 = !state.fx.automation || !open || state.s.energy < q10.cost || q10.n < 1;
-      return `<article class="machine-unit">
+      ${o?`<div class="dept-metrics">${o}</div>`:""}
+    </div>`}function p(n,t,s=""){return`<div class="dept-metric"><span>${n}</span><strong>${t}</strong>${s?`<small>${s}</small>`:""}</div>`}c.controlView=function(){let s=r.machineGroups.map(d=>L(d)).filter(d=>d?.action==="machine").sort((d,f)=>d.data-f.data).map(d=>{let f=Number(d.data),k=e.s.machines[f],w=r.machineGroups[f]?.parent,q=Object.entries(r.areaGroups).find(([,X])=>X===w)?.[0]||"lab",ue=S.find(X=>X.id===q)?.name||q,G=e.s.areas.includes(q),me=G&&k>0,te=G?me?"RUNNING":"IDLE":"OFFLINE",Q=e.quote(f,1),W=e.quote(f,10),pe=!e.fx.automation||!G||e.s.energy<Q.cost||Q.n<1,fe=!e.fx.automation||!G||e.s.energy<W.cost||W.n<1;return`<article class="machine-unit">
         <div class="machine-head">
           <div>
-            <span class="machine-sector">${areaName}</span>
-            <h3>${r.label}</h3>
+            <span class="machine-sector">${ue}</span>
+            <h3>${d.label}</h3>
           </div>
-          <span class="machine-status state-${status.toLowerCase()}">${status}</span>
+          <span class="machine-status state-${te.toLowerCase()}">${te}</span>
         </div>
         <div class="machine-output">
           <span>OUTPUT</span>
-          <strong>${state.fmt(state.machineRate(i))}<small>/s</small></strong>
+          <strong>${e.fmt(e.machineRate(f))}<small>/s</small></strong>
         </div>
         <div class="machine-specs">
-          <span>Level <b>${level}</b></span>
-          <span>Milestone <b>${state.milestone(level)}×</b></span>
+          <span>Level <b>${k}</b></span>
+          <span>Milestone <b>${e.milestone(k)}\xD7</b></span>
         </div>
         <div class="machine-actions">
-          <button data-action="factoryinspect" data-i="${i}">Inspect</button>
-          <button data-action="machinebuy" data-i="${i}" data-n="1" ${disabled1 ? 'disabled' : ''}>Upgrade ×1 · ${state.fmt(q1.cost)} ϟ</button>
-          <button data-action="machinebuy" data-i="${i}" data-n="10" ${disabled10 ? 'disabled' : ''}>×10 · ${state.fmt(q10.cost)} ϟ</button>
+          <button data-action="factoryinspect" data-i="${f}">Inspect</button>
+          <button data-action="machinebuy" data-i="${f}" data-n="1" ${pe?"disabled":""}>Upgrade \xD71 \xB7 ${e.fmt(Q.cost)} \u03DF</button>
+          <button data-action="machinebuy" data-i="${f}" data-n="10" ${fe?"disabled":""}>\xD710 \xB7 ${e.fmt(W.cost)} \u03DF</button>
         </div>
-      </article>`;
-    }).join('');
-
-    const metrics =
-      metric('PRODUCTION', `${state.fmt(state.cps)}/s`) +
-      metric('MACHINE LEVELS', state.s.machines.reduce((a,b)=>a+b,0)) +
-      metric('RUN ENERGY', state.fmt(state.s.run));
-
-    return `<div class="factory-interface">
-      ${intro('MACHINE HALL', 'Production floor', 'Monitor every production unit from one industrial control surface. Individual machines can still be inspected directly in the world.', metrics)}
-      ${!state.fx.automation ? '<div class="department-alert">Unlock Basic automation in the Upgrade Lab before machines can be built.</div>' : ''}
-      <div class="machine-floor">${floor}</div>
+      </article>`}).join(""),o=p("PRODUCTION",`${e.fmt(e.cps)}/s`)+p("MACHINE LEVELS",e.s.machines.reduce((d,f)=>d+f,0))+p("RUN ENERGY",e.fmt(e.s.run));return`<div class="factory-interface">
+      ${u("MACHINE HALL","Production floor","Monitor every production unit from one industrial control surface. Individual machines can still be inspected directly in the world.",o)}
+      ${e.fx.automation?"":'<div class="department-alert">Unlock Basic automation in the Upgrade Lab before machines can be built.</div>'}
+      <div class="machine-floor">${s}</div>
       <div class="factory-subsystem-title">FACILITY INFRASTRUCTURE</div>
-      <div class="infrastructure-grid">${[
-        ['Cooling system','+10% manual energy'],
-        ['Power grid','+10% passive energy'],
-        ['Network system','+1 automatic pulse/sec'],
-        ['Storage system','+1h offline reserve'],
-        ['Research network','+10% XP gain']
-      ].map(([name,effect],i)=>{
-        const level=state.s.facility[i],cost=1000*2**level;
-        return `<article class="infrastructure-card"><span>LV ${level}</span><h3>${name}</h3><p>${effect} per level.</p><button data-action="facility" data-i="${i}" ${state.s.energy<cost||level>=50?'disabled':''}>Upgrade · ${state.fmt(cost)} ϟ</button></article>`;
-      }).join('')}</div>
-    </div>`;
-  };
-
-  ui.missionsView = function missionView() {
-    const ready = missionReady();
-    const metrics =
-      metric('REWARDS READY', ready) +
-      metric('COMPLETED', state.s.stats.quests) +
-      metric('STARDUST', state.fmt(state.s.dust));
-    return `<div class="mission-interface">
-      ${intro('MISSION CONTROL', 'Contracts & objectives', 'Track daily and weekly contracts from the control room. Completed work can be claimed here.', metrics)}
-      <div class="mission-supply"><span>DAILY LOGISTICS DROP</span><button data-action="daily">${state.s.daily.date === state.calendar() ? 'Collected today' : 'Collect supply'}</button></div>
-      <div class="contract-board">${originalMissionsView()}</div>
-    </div>`;
-  };
-
-  ui.collectionView = function archiveView() {
-    const metrics =
-      metric('SHARDS', `${state.s.collected.length}/50`) +
-      metric('DISCOVERED SECTORS', `${state.s.discovered.length}/10`) +
-      metric('REACTOR SKINS', state.s.skins.length);
-    return `<div class="archive-interface">
-      ${intro('FOUNDRY ARCHIVE', 'Discovery catalogue', 'A quieter gallery for shards, reactor appearances, artefacts and discoveries recovered across the facility.', metrics)}
-      <div class="archive-gallery">${originalCollectionView()}</div>
-    </div>`;
-  };
-
-  ui.arcadeView = function arcadeDepartmentView() {
-    const metrics =
-      metric('TOKENS', state.s.tokens) +
-      metric('GAMES PLAYED', state.s.stats.games) +
-      metric('WINS', state.s.stats.wins);
-    return `<div class="arcade-interface">
-      ${intro('ARCADE', 'Reactor recreation deck', 'Short skill challenges with scores, tokens and foundry rewards.', metrics)}
-      <div class="arcade-cabinets">${originalArcadeView()}</div>
-    </div>`;
-  };
-
-  ui.researchView = function researchDepartmentView() {
-    const job = state.s.researchJob;
-    const metrics =
-      metric('ACTIVE PROJECT', job ? 'RUNNING' : 'IDLE') +
-      metric('PROJECT LEVELS', state.s.research.reduce((a,b)=>a+b,0)) +
-      metric('RESEARCH RESERVE', state.fmt(state.s.energy));
-    if (!state.s.areas.includes('research')) {
-      return `<div class="research-interface">
-        ${intro('RESEARCH CENTRE', 'Technology projects', 'The centre is physically present, but its laboratory network is still offline.', metrics)}
+      <div class="infrastructure-grid">${[["Cooling system","+10% manual energy"],["Power grid","+10% passive energy"],["Network system","+1 automatic pulse/sec"],["Storage system","+1h offline reserve"],["Research network","+10% XP gain"]].map(([d,f],k)=>{let w=e.s.facility[k],x=1e3*2**w;return`<article class="infrastructure-card"><span>LV ${w}</span><h3>${d}</h3><p>${f} per level.</p><button data-action="facility" data-i="${k}" ${e.s.energy<x||w>=50?"disabled":""}>Upgrade \xB7 ${e.fmt(x)} \u03DF</button></article>`}).join("")}</div>
+    </div>`},c.missionsView=function(){let t=V(),s=p("REWARDS READY",t)+p("COMPLETED",e.s.stats.quests)+p("STARDUST",e.fmt(e.s.dust));return`<div class="mission-interface">
+      ${u("MISSION CONTROL","Contracts & objectives","Track daily and weekly contracts from the control room. Completed work can be claimed here.",s)}
+      <div class="mission-supply"><span>DAILY LOGISTICS DROP</span><button data-action="daily">${e.s.daily.date===e.calendar()?"Collected today":"Collect supply"}</button></div>
+      <div class="contract-board">${_()}</div>
+    </div>`},c.collectionView=function(){let t=p("SHARDS",`${e.s.collected.length}/50`)+p("DISCOVERED SECTORS",`${e.s.discovered.length}/10`)+p("REACTOR SKINS",e.s.skins.length);return`<div class="archive-interface">
+      ${u("FOUNDRY ARCHIVE","Discovery catalogue","A quieter gallery for shards, reactor appearances, artefacts and discoveries recovered across the facility.",t)}
+      <div class="archive-gallery">${a()}</div>
+    </div>`},c.arcadeView=function(){let t=p("TOKENS",e.s.tokens)+p("GAMES PLAYED",e.s.stats.games)+p("WINS",e.s.stats.wins);return`<div class="arcade-interface">
+      ${u("ARCADE","Reactor recreation deck","Short skill challenges with scores, tokens and foundry rewards.",t)}
+      <div class="arcade-cabinets">${l()}</div>
+    </div>`},c.researchView=function(){let t=e.s.researchJob,s=p("ACTIVE PROJECT",t?"RUNNING":"IDLE")+p("PROJECT LEVELS",e.s.research.reduce((o,d)=>o+d,0))+p("RESEARCH RESERVE",e.fmt(e.s.energy));return e.s.areas.includes("research")?`<div class="research-interface">
+      ${u("RESEARCH CENTRE","Technology projects","Research unlocks durable technological improvements and runs on its own timer.",s)}
+      <div class="research-projects">${m()}</div>
+    </div>`:`<div class="research-interface">
+        ${u("RESEARCH CENTRE","Technology projects","The centre is physically present, but its laboratory network is still offline.",s)}
         <div class="department-lock"><span>RESEARCH NETWORK OFFLINE</span><h3>Open the Research Wing sector</h3><p>Progress through Exploration in the Upgrade Lab and earn enough run energy to bring the research network online.</p></div>
-      </div>`;
-    }
-    return `<div class="research-interface">
-      ${intro('RESEARCH CENTRE', 'Technology projects', 'Research unlocks durable technological improvements and runs on its own timer.', metrics)}
-      <div class="research-projects">${originalResearchView()}</div>
-    </div>`;
-  };
-
-  ui.rebirthView = function quantumDepartmentView() {
-    const metrics =
-      metric('FOUNDRY VALUE', state.fmt(state.s.run)) +
-      metric('RESTART REWARD', `+${state.fmt(state.rebirthGain)} cores`) +
-      metric('REBIRTHS', state.s.rebirths);
-    return `<div class="quantum-interface">
-      ${intro('QUANTUM FACILITY', 'Prestige reactor', 'Review exactly what a restart changes before committing to a quantum rebirth or later prestige layer.', metrics)}
-      <div class="quantum-core-panel">${originalRebirthView()}</div>
-    </div>`;
-  };
-
-  ui.workersView = function workersView() {
-    const workers = [
-      { id:'engineer', name:'Chief Engineer', role:'Foundry Operations', trait:'Precision Planner', assignment:'Origin Laboratory', value:state.s.lifetime, goal:100000, objective:'Generate 100K lifetime energy' },
-      { id:'scientist', name:'Dr. Lyra', role:'Research Scientist', trait:'Systems Thinker', assignment:'Research Centre', value:Object.keys(state.s.skills).length, goal:12, objective:'Unlock 12 skill nodes' },
-      { id:'technician', name:'Technician Omi', role:'Machine Technician', trait:'Fast Hands', assignment:'Machine Hall', value:state.s.machines.reduce((a,b)=>a+b,0), goal:25, objective:'Own 25 machine levels' },
-      { id:'explorer', name:'Explorer Vega', role:'Survey Specialist', trait:'Pathfinder', assignment:'Field Operations', value:state.s.discovered.length, goal:6, objective:'Discover 6 facility areas' }
-    ];
-    const rows = workers.map((w) => {
-      const claimed = state.s.npcClaims.includes(w.id);
-      const ready = w.value >= w.goal;
-      return `<article class="worker-card ${ready && !claimed ? 'ready' : ''}">
-        <div class="worker-avatar">${w.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+      </div>`},c.rebirthView=function(){let t=p("FOUNDRY VALUE",e.fmt(e.s.run))+p("RESTART REWARD",`+${e.fmt(e.rebirthGain)} cores`)+p("REBIRTHS",e.s.rebirths);return`<div class="quantum-interface">
+      ${u("QUANTUM FACILITY","Prestige reactor","Review exactly what a restart changes before committing to a quantum rebirth or later prestige layer.",t)}
+      <div class="quantum-core-panel">${g()}</div>
+    </div>`},c.workersView=function(){let s=[{id:"engineer",name:"Chief Engineer",role:"Foundry Operations",trait:"Precision Planner",assignment:"Origin Laboratory",value:e.s.lifetime,goal:1e5,objective:"Generate 100K lifetime energy"},{id:"scientist",name:"Dr. Lyra",role:"Research Scientist",trait:"Systems Thinker",assignment:"Research Centre",value:Object.keys(e.s.skills).length,goal:12,objective:"Unlock 12 skill nodes"},{id:"technician",name:"Technician Omi",role:"Machine Technician",trait:"Fast Hands",assignment:"Machine Hall",value:e.s.machines.reduce((o,d)=>o+d,0),goal:25,objective:"Own 25 machine levels"},{id:"explorer",name:"Explorer Vega",role:"Survey Specialist",trait:"Pathfinder",assignment:"Field Operations",value:e.s.discovered.length,goal:6,objective:"Discover 6 facility areas"}].map(o=>{let d=e.s.npcClaims.includes(o.id),f=o.value>=o.goal;return`<article class="worker-card ${f&&!d?"ready":""}">
+        <div class="worker-avatar">${o.name.split(" ").map(k=>k[0]).join("").slice(0,2)}</div>
         <div class="worker-main">
-          <span>${w.role}</span><h3>${w.name}</h3>
-          <div class="worker-tags"><b>${w.trait}</b><b>${w.assignment}</b></div>
-          <p>${w.objective}</p>
-          <div class="worker-progress"><i style="width:${Math.min(100, w.value / w.goal * 100)}%"></i></div>
+          <span>${o.role}</span><h3>${o.name}</h3>
+          <div class="worker-tags"><b>${o.trait}</b><b>${o.assignment}</b></div>
+          <p>${o.objective}</p>
+          <div class="worker-progress"><i style="width:${Math.min(100,o.value/o.goal*100)}%"></i></div>
         </div>
         <div class="worker-side">
-          <strong>${state.fmt(Math.min(w.value,w.goal))} / ${state.fmt(w.goal)}</strong>
-          <button data-action="npcclaim" data-id="${w.id}" ${claimed || !ready ? 'disabled' : ''}>${claimed ? 'Claimed' : ready ? 'Claim reward' : 'In progress'}</button>
+          <strong>${e.fmt(Math.min(o.value,o.goal))} / ${e.fmt(o.goal)}</strong>
+          <button data-action="npcclaim" data-id="${o.id}" ${d||!f?"disabled":""}>${d?"Claimed":f?"Claim reward":"In progress"}</button>
         </div>
-      </article>`;
-    }).join('');
-    return `<div class="workers-interface">
-      ${intro('WORKER OFFICE', 'Crew roster', 'Review specialist roles, traits, assignments and progression rewards.', metric('CREW', '4') + metric('ASSIGNMENTS COMPLETE', state.s.npcClaims.length))}
-      <div class="worker-roster">${rows}</div>
-    </div>`;
-  };
-
-  ui.warehouseView = function warehouseView() {
-    const s = state.s;
-    const stocks = [
-      ['ENERGY RESERVE', state.fmt(s.energy), 'Current spendable energy'],
-      ['STARDUST', state.fmt(s.dust), 'Specialist currency'],
-      ['QUANTUM CORES', state.fmt(s.cores), 'Prestige resource'],
-      ['ARCADE TOKENS', state.fmt(s.tokens), 'Recreation exchange'],
-      ['ENERGY SHARDS', `${s.collected.length} / 50`, 'Recovered discoveries'],
-      ['SINGULARITY SHARDS', state.fmt(s.shards), 'Ascension resource'],
-      ['DRONE COMPONENTS', state.fmt(s.droneCopies.reduce((a,b)=>a+b,0)), 'Companion inventory'],
-      ['REACTOR FINISHES', state.s.skins.length, 'Unlocked visual signatures']
-    ];
-    return `<div class="warehouse-interface">
-      ${intro('WAREHOUSE', 'Foundry reserves', 'A scan-friendly view of resources and stored progression items.', metric('OFFLINE RESERVE', `${state.offlineHours}h`) + metric('STORAGE SYSTEM', `LV ${s.facility[3]}`))}
-      <div class="warehouse-capacity"><span>OFFLINE RESERVE CAPACITY</span><strong>${state.offlineHours} HOURS</strong><div><i style="width:${Math.min(100,state.offlineHours/48*100)}%"></i></div></div>
-      <div class="warehouse-grid">${stocks.map(([name,value,sub])=>`<article class="stock-card"><span>${name}</span><strong>${value}</strong><small>${sub}</small></article>`).join('')}</div>
-    </div>`;
-  };
-
-  ui.treasuryView = function treasuryView() {
-    const s = state.s;
-    const cps = state.cps;
-    const lifetimeRate = s.lifetime ? Math.min(100, s.run / s.lifetime * 100) : 0;
-    return `<div class="treasury-interface">
-      ${intro('TREASURY', 'Financial dashboard', 'A compact operational view of current energy, production and long-term foundry value.', metric('NET PRODUCTION', `+${state.fmt(cps)}/s`) + metric('CURRENT ENERGY', state.fmt(s.energy)) + metric('LIFETIME VALUE', state.fmt(s.lifetime)))}
+      </article>`}).join("");return`<div class="workers-interface">
+      ${u("WORKER OFFICE","Crew roster","Review specialist roles, traits, assignments and progression rewards.",p("CREW","4")+p("ASSIGNMENTS COMPLETE",e.s.npcClaims.length))}
+      <div class="worker-roster">${s}</div>
+    </div>`},c.warehouseView=function(){let t=e.s,s=[["ENERGY RESERVE",e.fmt(t.energy),"Current spendable energy"],["STARDUST",e.fmt(t.dust),"Specialist currency"],["QUANTUM CORES",e.fmt(t.cores),"Prestige resource"],["ARCADE TOKENS",e.fmt(t.tokens),"Recreation exchange"],["ENERGY SHARDS",`${t.collected.length} / 50`,"Recovered discoveries"],["SINGULARITY SHARDS",e.fmt(t.shards),"Ascension resource"],["DRONE COMPONENTS",e.fmt(t.droneCopies.reduce((o,d)=>o+d,0)),"Companion inventory"],["REACTOR FINISHES",e.s.skins.length,"Unlocked visual signatures"]];return`<div class="warehouse-interface">
+      ${u("WAREHOUSE","Foundry reserves","A scan-friendly view of resources and stored progression items.",p("OFFLINE RESERVE",`${e.offlineHours}h`)+p("STORAGE SYSTEM",`LV ${t.facility[3]}`))}
+      <div class="warehouse-capacity"><span>OFFLINE RESERVE CAPACITY</span><strong>${e.offlineHours} HOURS</strong><div><i style="width:${Math.min(100,e.offlineHours/48*100)}%"></i></div></div>
+      <div class="warehouse-grid">${s.map(([o,d,f])=>`<article class="stock-card"><span>${o}</span><strong>${d}</strong><small>${f}</small></article>`).join("")}</div>
+    </div>`},c.treasuryView=function(){let t=e.s,s=e.cps,o=t.lifetime?Math.min(100,t.run/t.lifetime*100):0;return`<div class="treasury-interface">
+      ${u("TREASURY","Financial dashboard","A compact operational view of current energy, production and long-term foundry value.",p("NET PRODUCTION",`+${e.fmt(s)}/s`)+p("CURRENT ENERGY",e.fmt(t.energy))+p("LIFETIME VALUE",e.fmt(t.lifetime)))}
       <div class="finance-grid">
-        <article class="finance-card featured"><span>NET PRODUCTION</span><strong>+${state.fmt(cps)}<small>/s</small></strong><p>Passive production after current upgrades and boosts.</p></article>
-        <article class="finance-card"><span>CURRENT RUN</span><strong>${state.fmt(s.run)}</strong><div class="finance-bar"><i style="width:${lifetimeRate}%"></i></div><small>${lifetimeRate.toFixed(1)}% of lifetime energy</small></article>
+        <article class="finance-card featured"><span>NET PRODUCTION</span><strong>+${e.fmt(s)}<small>/s</small></strong><p>Passive production after current upgrades and boosts.</p></article>
+        <article class="finance-card"><span>CURRENT RUN</span><strong>${e.fmt(t.run)}</strong><div class="finance-bar"><i style="width:${o}%"></i></div><small>${o.toFixed(1)}% of lifetime energy</small></article>
         <article class="finance-card"><span>EXPENSES</span><strong>0<small>/s</small></strong><p>Nova Foundry has no recurring machine upkeep in the current ruleset.</p></article>
-        <article class="finance-card"><span>ASSET DEPTH</span><strong>${s.machines.reduce((a,b)=>a+b,0)}</strong><p>Total machine levels across ${s.areas.length} active sectors.</p></article>
+        <article class="finance-card"><span>ASSET DEPTH</span><strong>${t.machines.reduce((d,f)=>d+f,0)}</strong><p>Total machine levels across ${t.areas.length} active sectors.</p></article>
       </div>
       <div class="treasury-ledger">
-        <div><span>Lifetime energy</span><strong>${state.fmt(s.lifetime)}</strong></div>
-        <div><span>Run energy</span><strong>${state.fmt(s.run)}</strong></div>
-        <div><span>Stardust reserve</span><strong>${state.fmt(s.dust)}</strong></div>
-        <div><span>Quantum reserve</span><strong>${state.fmt(s.cores)}</strong></div>
+        <div><span>Lifetime energy</span><strong>${e.fmt(t.lifetime)}</strong></div>
+        <div><span>Run energy</span><strong>${e.fmt(t.run)}</strong></div>
+        <div><span>Stardust reserve</span><strong>${e.fmt(t.dust)}</strong></div>
+        <div><span>Quantum reserve</span><strong>${e.fmt(t.cores)}</strong></div>
       </div>
-    </div>`;
-  };
-
-  ui.marketView = function marketView() {
-    const unlocked = state.s.lifetime >= 1000;
-    return `<div class="market-interface">
-      ${intro('MARKETPLACE', 'Specialist exchange', 'Spend Stardust on companion drones and related specialist equipment. Core production resources are never sold automatically.', metric('STARDUST', state.fmt(state.s.dust)) + metric('DRONES OWNED', state.s.droneCopies.reduce((a,b)=>a+b,0)))}
-      ${unlocked
-        ? `<div class="market-ticker"><span>FOUNDRY EXCHANGE</span><b>DRONE COMPONENTS</b><em>AVAILABLE</em></div><div class="market-listings">${originalDronesView()}</div>`
-        : `<div class="department-lock"><span>MARKET LICENSE PENDING</span><h3>Reach 1K lifetime energy</h3><p>The specialist drone exchange opens once the foundry has produced 1,000 lifetime energy.</p></div>`}
-    </div>`;
-  };
-
-  ui.adminView = function adminView() {
-    const items = [
-      ['SETTINGS','Graphics, audio, controls and save management.','settings','⚙',false],
-      ['ACHIEVEMENTS',`${state.s.achievements.length} completed achievements.`,'achievements','✦',false],
-      ['CHALLENGES',state.s.rebirths ? 'Optional rule modifiers and challenge runs.' : 'Available after your first rebirth.','challenges','◇',!state.s.rebirths],
-      ['STATISTICS','Lifetime production and progression records.','stats','▥',false]
-    ];
-    return `<div class="admin-interface">
-      ${intro('ADMINISTRATION', 'Foundry administration', 'Secondary systems live here instead of in a permanent “More” menu.', metric('ACHIEVEMENTS', state.s.achievements.length) + metric('SECTORS', `${state.s.discovered.length}/10`))}
-      <div class="admin-grid">${items.map(([name,copy,page,icon,disabled])=>`<article class="admin-card"><span>${icon}</span><h3>${name}</h3><p>${copy}</p><button data-action="open" data-page="${page}" ${disabled?'disabled':''}>${disabled?'Locked':'Open'}</button></article>`).join('')}</div>
-    </div>`;
-  };
-
-  ui.settingsView = function settingsDepartmentView() {
-    return originalSettingsView()
-      .replace('Use Origin to return to the core and All plots for an overview.', 'Press Home to return to the Origin core. The world itself is the navigation map.')
-      .replace('Keyboard shortcuts: T opens Skills, M opens the Map, Tab opens the menu. Arrow keys pan the map. Home focuses Origin.', 'Keyboard: Arrow keys pan the map, Home focuses Origin, Esc closes a department, and holding Alt reveals extra building status.');
-  };
-
-  const originalRender = ui.render.bind(ui);
-  const titles = {
-    tree:['UPGRADE LAB','Skill tree'],
-    control:['MACHINE HALL','Production floor'],
-    missions:['MISSION CONTROL','Contracts & objectives'],
-    collection:['FOUNDRY ARCHIVE','Collection & discoveries'],
-    arcade:['ARCADE','Minigames'],
-    research:['RESEARCH CENTRE','Technology projects'],
-    workers:['WORKER OFFICE','Crew roster'],
-    warehouse:['WAREHOUSE','Inventory & reserves'],
-    market:['MARKETPLACE','Specialist exchange'],
-    treasury:['TREASURY','Economy & performance'],
-    rebirth:['QUANTUM FACILITY','Rebirth & ascension'],
-    admin:['ADMINISTRATION','Administration'],
-    settings:['ADMINISTRATION','Settings'],
-    achievements:['ADMINISTRATION','Achievements'],
-    challenges:['ADMINISTRATION','Challenges'],
-    stats:['ADMINISTRATION','Statistics'],
-    drones:['MARKETPLACE','Companion drones']
-  };
-
-  ui.render = function redesignedRender() {
-    originalRender();
-    menu.dataset.page = this.page;
-    const title = titles[this.page];
-    if (title) {
-      const eyebrow = menu.querySelector('.menu-header .eyebrow');
-      eyebrow.textContent = title[0];
-      menuTitle.textContent = title[1];
-    }
-    if (this.page === 'tree' && this.treeType !== 'main') {
-      const eyebrow = menu.querySelector('.menu-header .eyebrow');
-      if (this.treeType === 'quantum' || this.treeType === 'ascension') {
-        eyebrow.textContent = 'QUANTUM FACILITY';
-        menuTitle.textContent = this.treeType === 'quantum' ? 'Quantum research' : 'Ascension research';
-      } else {
-        menuTitle.textContent = 'Mastery research';
-      }
-    }
-    $('menuNav').innerHTML = '';
-    if (this.page === 'collection') {
-      menuContent.querySelectorAll('[data-page="drones"]').forEach((button) => button.remove());
-    }
-  };
-
-  const originalOpen = ui.open.bind(ui);
-  ui.open = function redesignedOpen(page = 'admin') {
-    const d = departmentByPage.get(page);
-    const shouldFocus = d && !this._suppressDepartmentFocus;
-    this._suppressDepartmentFocus = false;
-
-    if (!this.opened && shouldFocus) {
-      this._worldReturn = {
-        x: world.goal.x,
-        z: world.goal.z,
-        size: world.goalSize
-      };
-    }
-
-    if (shouldFocus) {
-      this._activeDepartment = d;
-      world.goal.set(d.x, 0, d.z);
-      world.goalSize = Math.max(18, Math.min(23, 20 / Math.max(.8, innerWidth / innerHeight)));
-    }
-
-    document.body.classList.add('building-ui-open');
-    originalOpen(page);
-  };
-
-  const originalClose = ui.close.bind(ui);
-  ui.close = function redesignedClose() {
-    const previous = this._worldReturn;
-    originalClose();
-    document.body.classList.remove('building-ui-open');
-    if (previous) {
-      world.goal.set(previous.x, 0, previous.z);
-      world.goalSize = previous.size;
-    }
-    this._worldReturn = null;
-    this._activeDepartment = null;
-  };
-
-  const originalInteract = ui.interact.bind(ui);
-  ui.interact = function redesignedInteract(record) {
-    if (record.department) {
-      this._activeDepartment = record.department;
-      state.emit('sound', record.department.id === 'quantum' ? 420 : 310);
-      if (record.department.id === 'upgrade') {
-        this.treeType = 'main';
-        if (this.branch === 'cross') this.branch = 'power';
-      }
-    }
-    originalInteract(record);
-  };
-
-  const originalAction = ui.action.bind(ui);
-  ui.action = async function redesignedAction(data) {
-    if (data.action === 'factoryinspect') {
-      this.machineIndex = Number(data.i);
-      this.showMachine();
-      return;
-    }
-    if (data.action === 'npcclaim' && this.page === 'workers') {
-      state.npcClaim(data.id);
-      this.render();
-      return;
-    }
-    if (data.action === 'qtree' || data.action === 'atree') {
-      this._suppressDepartmentFocus = true;
-    }
-    return originalAction(data);
-  };
-
-  const originalPaint = ui.paint.bind(ui);
-  ui.paint = function redesignedPaint() {
-    originalPaint();
-
-    const r = world.current;
-    if (r?.department) $('interactSub').textContent = r.department.tooltip;
-
-    const s = state.s;
-    if (s.stats.clicks >= 5 && !state.fx.automation) {
-      $('objectiveLabel').textContent = 'OPEN THE UPGRADE LAB';
-      $('objectiveText').textContent = 'Select the Upgrade Lab and unlock Basic automation.';
-    } else if (state.fx.automation && !s.machines[0]) {
-      $('objectiveLabel').textContent = 'START THE MACHINE HALL';
-      $('objectiveText').textContent = 'Select the Machine Hall and build your first Energy collector.';
-    }
-
-    if (menu.dataset.page !== this.page) menu.dataset.page = this.page;
-  };
-
-  // Disable the legacy T/M/Tab menu shortcuts. Tab remains usable for keyboard focus.
-  document.addEventListener('keydown', (event) => {
-    if (event.code === 'AltLeft' || event.code === 'AltRight') document.body.classList.add('info-mode');
-    if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
-    if (event.code === 'Tab' || event.code === 'KeyT' || event.code === 'KeyM') {
-      event.stopImmediatePropagation();
-    }
-  }, true);
-  document.addEventListener('keyup', (event) => {
-    if (event.code === 'AltLeft' || event.code === 'AltRight') document.body.classList.remove('info-mode');
-  }, true);
-  window.addEventListener('blur', () => document.body.classList.remove('info-mode'));
-
-  // Initial label position and menu cleanup.
-  updateDepartmentVisuals(.31);
-  ui.nav();
-  if (ui.opened) ui.render();
-}
-
-
-  applyRedesign(nova);
-})();
+    </div>`},c.marketView=function(){let t=e.s.lifetime>=1e3;return`<div class="market-interface">
+      ${u("MARKETPLACE","Specialist exchange","Spend Stardust on companion drones and related specialist equipment. Core production resources are never sold automatically.",p("STARDUST",e.fmt(e.s.dust))+p("DRONES OWNED",e.s.droneCopies.reduce((s,o)=>s+o,0)))}
+      ${t?`<div class="market-ticker"><span>FOUNDRY EXCHANGE</span><b>DRONE COMPONENTS</b><em>AVAILABLE</em></div><div class="market-listings">${h()}</div>`:'<div class="department-lock"><span>MARKET LICENSE PENDING</span><h3>Reach 1K lifetime energy</h3><p>The specialist drone exchange opens once the foundry has produced 1,000 lifetime energy.</p></div>'}
+    </div>`},c.adminView=function(){let t=[["SETTINGS","Graphics, audio, controls and save management.","settings","\u2699",!1],["ACHIEVEMENTS",`${e.s.achievements.length} completed achievements.`,"achievements","\u2726",!1],["CHALLENGES",e.s.rebirths?"Optional rule modifiers and challenge runs.":"Available after your first rebirth.","challenges","\u25C7",!e.s.rebirths],["STATISTICS","Lifetime production and progression records.","stats","\u25A5",!1]];return`<div class="admin-interface">
+      ${u("ADMINISTRATION","Foundry administration","Secondary systems live here instead of in a permanent \u201CMore\u201D menu.",p("ACHIEVEMENTS",e.s.achievements.length)+p("SECTORS",`${e.s.discovered.length}/10`))}
+      <div class="admin-grid">${t.map(([s,o,d,f,k])=>`<article class="admin-card"><span>${f}</span><h3>${s}</h3><p>${o}</p><button data-action="open" data-page="${d}" ${k?"disabled":""}>${k?"Locked":"Open"}</button></article>`).join("")}</div>
+    </div>`},c.settingsView=function(){return b().replace("Use Origin to return to the core and All plots for an overview.","Press Home to return to the Origin core. The world itself is the navigation map.").replace("Keyboard shortcuts: T opens Skills, M opens the Map, Tab opens the menu. Arrow keys pan the map. Home focuses Origin.","Keyboard: Arrow keys pan the map, Home focuses Origin, Esc closes a department, and holding Alt reveals extra building status.")};let H=c.render.bind(c),E={tree:["UPGRADE LAB","Skill tree"],control:["MACHINE HALL","Production floor"],missions:["MISSION CONTROL","Contracts & objectives"],collection:["FOUNDRY ARCHIVE","Collection & discoveries"],arcade:["ARCADE","Minigames"],research:["RESEARCH CENTRE","Technology projects"],workers:["WORKER OFFICE","Crew roster"],warehouse:["WAREHOUSE","Inventory & reserves"],market:["MARKETPLACE","Specialist exchange"],treasury:["TREASURY","Economy & performance"],rebirth:["QUANTUM FACILITY","Rebirth & ascension"],admin:["ADMINISTRATION","Administration"],settings:["ADMINISTRATION","Settings"],achievements:["ADMINISTRATION","Achievements"],challenges:["ADMINISTRATION","Challenges"],stats:["ADMINISTRATION","Statistics"],drones:["MARKETPLACE","Companion drones"]};c.render=function(){H(),v.dataset.page=this.page;let t=E[this.page];if(t){let s=v.querySelector(".menu-header .eyebrow");s.textContent=t[0],$.textContent=t[1]}if(this.page==="tree"&&this.treeType!=="main"){let s=v.querySelector(".menu-header .eyebrow");this.treeType==="quantum"||this.treeType==="ascension"?(s.textContent="QUANTUM FACILITY",$.textContent=this.treeType==="quantum"?"Quantum research":"Ascension research"):$.textContent="Mastery research"}y("menuNav").innerHTML="",this.page==="collection"&&M.querySelectorAll('[data-page="drones"]').forEach(s=>s.remove())};let oe=c.open.bind(c);c.open=function(t="admin"){let s=P.get(t),o=s&&!this._suppressDepartmentFocus;this._suppressDepartmentFocus=!1,!this.opened&&o&&(this._worldReturn={x:r.goal.x,z:r.goal.z,size:r.goalSize}),o&&(this._activeDepartment=s,r.goal.set(s.x,0,s.z),r.goalSize=Math.max(18,Math.min(23,20/Math.max(.8,innerWidth/innerHeight)))),document.body.classList.add("building-ui-open"),oe(t)};let se=c.close.bind(c);c.close=function(){let t=this._worldReturn;se(),document.body.classList.remove("building-ui-open"),t&&(r.goal.set(t.x,0,t.z),r.goalSize=t.size),this._worldReturn=null,this._activeDepartment=null};let ce=c.interact.bind(c);c.interact=function(t){t.department&&(this._activeDepartment=t.department,e.emit("sound",t.department.id==="quantum"?420:310),t.department.id==="upgrade"&&(this.treeType="main",this.branch==="cross"&&(this.branch="power"))),ce(t)};let le=c.action.bind(c);c.action=async function(t){if(t.action==="factoryinspect"){this.machineIndex=Number(t.i),this.showMachine();return}if(t.action==="npcclaim"&&this.page==="workers"){e.npcClaim(t.id),this.render();return}return(t.action==="qtree"||t.action==="atree")&&(this._suppressDepartmentFocus=!0),le(t)};let de=c.paint.bind(c);c.paint=function(){de();let t=r.current;t?.department&&(y("interactSub").textContent=t.department.tooltip);let s=e.s;s.stats.clicks>=5&&!e.fx.automation?(y("objectiveLabel").textContent="OPEN THE UPGRADE LAB",y("objectiveText").textContent="Select the Upgrade Lab and unlock Basic automation."):e.fx.automation&&!s.machines[0]&&(y("objectiveLabel").textContent="START THE MACHINE HALL",y("objectiveText").textContent="Select the Machine Hall and build your first Energy collector."),v.dataset.page!==this.page&&(v.dataset.page=this.page)},document.addEventListener("keydown",n=>{(n.code==="AltLeft"||n.code==="AltRight")&&document.body.classList.add("info-mode"),!/INPUT|TEXTAREA|SELECT/.test(n.target.tagName)&&(n.code==="Tab"||n.code==="KeyT"||n.code==="KeyM")&&n.stopImmediatePropagation()},!0),document.addEventListener("keyup",n=>{(n.code==="AltLeft"||n.code==="AltRight")&&document.body.classList.remove("info-mode")},!0),window.addEventListener("blur",()=>document.body.classList.remove("info-mode")),ie(i,T),z(.31),c.nav(),c.opened&&c.render()}return Ee($e);})();
+NovaRedesign.applyRedesign(window.__NOVA);

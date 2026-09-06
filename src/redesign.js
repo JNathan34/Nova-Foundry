@@ -1,3 +1,5 @@
+import { applyPlots } from './plots.js';
+
 export function applyRedesign(nova) {
   if (!nova || window.__NOVA_REDESIGN_APPLIED__) return;
   window.__NOVA_REDESIGN_APPLIED__ = true;
@@ -667,9 +669,10 @@ export function applyRedesign(nova) {
   }, true);
   window.addEventListener('blur', () => document.body.classList.remove('info-mode'));
 
+  applyPlots(nova, departments);
+
   // Initial label position and menu cleanup.
   updateDepartmentVisuals(.31);
   ui.nav();
   if (ui.opened) ui.render();
 }
-

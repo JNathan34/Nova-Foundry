@@ -5,7 +5,7 @@
   "description": "Offline bird’s-eye point-and-click reactor incremental game",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --format=iife --target=es2020 --minify --outfile=assets/game.js"
+    "build": "esbuild src/main.js --bundle --format=iife --target=es2020 --minify --outfile=assets/game.js && esbuild src/redesign.js --bundle --format=iife --global-name=NovaRedesign --target=es2020 --minify --footer:js=\"NovaRedesign.applyRedesign(window.__NOVA);\" --outfile=assets/redesign.js"
   },
   "dependencies": {
     "three": "0.185.1"

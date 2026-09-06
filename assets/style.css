@@ -985,3 +985,10 @@ body.department-redesign #transition{background:rgba(12,8,16,.92);color:#eee8f5}
 .department-lock>span{display:block;font-size:9px;letter-spacing:1.4px;color:var(--dept)}
 .department-lock h3{margin:7px 0 6px;font-size:18px}
 .department-lock p{margin:0;color:#99a399;font-size:12px;line-height:1.6}
+.plot-arrange-entry{display:flex;gap:18px;align-items:center;margin:0 0 22px;padding:16px;background:#202921;border:1px solid #ffffff14;border-radius:12px}
+.plot-arrange-entry span{font-size:12px;color:#a4b2a7}
+.department-redesign .world-label:not(.hovered):not(.selected){opacity:0}
+.department-redesign.info-mode .world-label{opacity:var(--distance-opacity,1)}
+#plotToolbar{position:fixed;z-index:20;bottom:22px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);display:flex;gap:14px;align-items:center;padding:16px 20px;border-radius:14px;background:#17201cf5;border:1px solid #849b8544;box-shadow:0 10px 40px #0005;color:#c5d2c9}
+#plotToolbar span{font-size:12px;max-width:420px}#plotToolbar button{white-space:nowrap}
+@media(max-width:650px){#plotToolbar{flex-wrap:wrap;justify-content:center;width:calc(100% - 24px)}#plotToolbar span{width:100%;text-align:center}.plot-arrange-entry{flex-direction:column;align-items:flex-start}}

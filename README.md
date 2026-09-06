@@ -14,6 +14,9 @@ Extract the entire ZIP, then open `index.html` in a modern desktop browser with 
 - Hold Alt to reveal extra status text above department buildings.
 - Esc closes the active department.
 - In the Upgrade Lab, drag the skill tree to explore it and select nodes to inspect or buy upgrades.
+- Every department building, generator and the central reactor has its own bordered, labelled plot. Roads separate the lots; generators occupy two dedicated production rows.
+- Open Administration → Arrange building plots to relocate a department together with its plot. Select the building, then click clear ground. Done or Esc exits arrangement mode; Reset layout restores the original arrangement. Arrangements autosave and are included in exports.
+- Locked generator plots remain visible. Click one to inspect its unlock requirements; clicking an unlocked plot opens that generator’s controls. Sector-map travel focuses the corresponding generator plot.
 
 ## What changed
 
@@ -38,3 +41,5 @@ Progress autosaves every five seconds in the browser. Use Administration → Set
 ## Source and build
 
 `src/` contains the source modules, including the building-navigation redesign layer. `assets/game.js` is the ready-to-play bundled build. For development, install Node.js and run `npm ci`, then `npm run build` from this folder. Dependency licenses are in `THIRD-PARTY-LICENSES.txt`.
+
+`src/plots.js` manages the independent lots, generator placement and saved department arrangements. The plot regression check is `node scripts/plots.test.cjs`; it requires Playwright and Microsoft Edge. Set `PLAYWRIGHT_PATH` to an existing Playwright package directory if it is not installed locally. The check verifies non-overlap, real building clicks, generator unlocks/construction, camera travel, rearrangement, save reloads and mobile rendering.
