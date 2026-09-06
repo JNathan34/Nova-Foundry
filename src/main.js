@@ -1,4 +1,3 @@
-import './management.js';
 import {State} from './state.js';
 import {World} from './world.js';
 import {Activities} from './activities.js';
