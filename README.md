@@ -1,40 +1,82 @@
-# Nova Foundry — Overlook v3
+# Nova Foundry — Overlook v4
 
-A bird’s-eye, point-and-click edition of Nova Foundry, with a tidy garden campus inspired by the supplied farm reference. Built with original procedural 3D scenery.
+A bird’s-eye foundry management game with world-based navigation and progressive facility expansion.
 
 ## Play
 
-Extract the entire ZIP, then open `index.html` in a modern desktop browser with WebGL enabled. Keep `assets` alongside it. No installation, account, internet connection or build step is required. Touch layouts are included; a desktop browser is the easiest way to open the downloaded game.
+Extract the ZIP and open `index.html` in a modern desktop browser with WebGL enabled. The ready-to-play bundle is included; no build step is required.
+
+## Core redesign
+
+The foundry now starts small instead of presenting the entire game at once.
+
+- Level 1: Machine Hall, Upgrade Lab and Mission Control.
+- Level 3: Warehouse.
+- Level 5: Worker Office.
+- Level 7: Research Centre.
+- Level 10: Marketplace.
+- Level 12: Foundry Archive.
+- Level 15: Arcade.
+- Level 18: Treasury.
+- Level 20 / late-game prestige progress: Quantum Facility.
+
+Only the next two future construction plots are shown. Newly unlocked facilities rise into place and briefly receive camera focus, so expansion is visible in the world instead of appearing as a new menu button.
+
+Administration is no longer a separate building. Settings, achievements, statistics, challenges, the facility map and daily supplies are secondary services inside Mission Control. Drones remain attached to the Marketplace.
+
+## Tutorial
+
+New players receive a six-step, large-format tutorial that teaches only the core loop:
+
+1. Select Machine Hall.
+2. Start the first Energy Collector.
+3. Observe automatic production.
+4. Visit Upgrade Lab.
+5. Purchase an upgrade.
+6. Visit Mission Control.
+
+The tutorial highlights one target at a time and disappears once the player reaches Mission Control. Existing progressed saves are not forced through early onboarding.
+
+## Upgrade Lab
+
+The main skill tree has been rebuilt around large, spaced nodes and a separate detail panel. Early play shows three clear categories:
+
+- Production
+- Speed
+- Efficiency
+
+Advanced categories appear later. Only one category is visible at a time, and additional nodes reveal as Foundry Level increases. Quantum and Ascension trees retain their existing endgame behavior.
 
 ## Controls
 
-- Click or tap the reactor to earn energy. Click a department building to open that system.
-- Drag empty ground to pan. Scroll or pinch to zoom.
-- Arrow keys pan and Home returns to the Origin core.
-- Hold Alt to reveal extra status text above department buildings.
-- Esc closes the active department.
-- In the Upgrade Lab, drag the skill tree to explore it and select nodes to inspect or buy upgrades.
+- Click a building to open its department.
+- Drag empty ground to pan.
+- Scroll or pinch to zoom.
+- Hold Alt to reveal extra building status.
+- Home returns the camera to Origin.
+- Esc closes the current department.
 
-## What changed
+## Saving
 
-The permanent system sidebar has been removed. The foundry itself is now the navigation layer: Upgrade Lab, Machine Hall, Mission Control, Foundry Archive, Arcade, Research Centre, Worker Office, Warehouse, Marketplace, Treasury, Quantum Facility and Administration each open their own department interface. The persistent HUD is limited to foundry level and core resources, while department panels use a dark management-game visual language and keep the world visible behind them.
-
-The fixed overhead camera, minigames, progression systems, 134 skill nodes, machines, ten sectors, missions, achievements, saving and prestige layers are retained.
-
-## Saving and existing progress
-
-Progress autosaves every five seconds in the browser. Use Administration → Settings → Export to keep a portable backup. To move progress from the previous 3D edition, export there and import here through Administration → Settings. The v2 save format is supported; camera settings use the new overhead view. Classic v1 imports retain transferable currency and XP. Browser storage availability depends on the browser and file location, so use an exported backup when moving the game.
+Progress autosaves in browser storage. Exporting a save from Mission Control → Settings remains the safest way to move progress between browsers or machines. Existing v3 saves remain compatible because the redesign derives facility unlocks from existing progression rather than changing the save schema.
 
 ## Project layout
 
-- `index.html` — offline game entry point.
-- `assets/style.css` — game styling.
-- `assets/game.js` — prebuilt browser bundle used by `index.html`.
-- `assets/redesign.js` — runtime department/building navigation layer for the prebuilt bundle.
-- `src/` — maintainable source modules used to produce the bundle, including `redesign.js`.
-- `package.json` / `package-lock.json` — reproducible development dependencies.
+- `index.html` — offline entry point.
+- `assets/game.js` — prebuilt base runtime.
+- `assets/redesign.js` — progressive building/navigation layer.
+- `assets/style.css` — responsive UI styling.
+- `src/` — maintainable source modules.
+- `package.json` / `package-lock.json` — development dependencies.
 - `THIRD-PARTY-LICENSES.txt` — dependency license notices.
 
-## Source and build
+## Development build
 
-`src/` contains the source modules, including the building-navigation redesign layer. `assets/game.js` is the ready-to-play bundled build. For development, install Node.js and run `npm ci`, then `npm run build` from this folder. Dependency licenses are in `THIRD-PARTY-LICENSES.txt`.
+With Node.js available, install dependencies and run:
+
+```bash
+npm ci
+npm run build
+```
+
+The shipped `index.html` loads the prebuilt base runtime and then attaches the progressive redesign layer from `assets/redesign.js`. The redesign has a guard, so a future development build that bundles `src/redesign.js` will not apply it twice.

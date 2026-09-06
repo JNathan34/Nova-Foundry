@@ -21,19 +21,19 @@
       </div>
 
       <div class="resource-strip" aria-label="Foundry resources">
-        <div>
+        <div id="energyResource">
           <span>ENERGY</span>
           <strong id="energy">0</strong>
         </div>
-        <div class="production-resource">
+        <div class="production-resource" id="productionResource">
           <span>PRODUCTION</span>
           <strong><b id="production">0</b><small>/s</small></strong>
         </div>
-        <div>
+        <div id="dustResource">
           <span>STARDUST</span>
           <strong id="dust">0</strong>
         </div>
-        <div>
+        <div id="coresResource">
           <span>QUANTUM CORES</span>
           <strong id="cores">0</strong>
         </div>
@@ -64,6 +64,16 @@
     </div>
 
     <div id="worldLabels" aria-hidden="true"></div>
+
+    <section class="tutorial-panel hidden" id="tutorialPanel" aria-live="polite">
+      <div class="tutorial-topline">
+        <span>FOUNDRY TRAINING</span>
+        <b id="tutorialStep">1/6</b>
+      </div>
+      <h2 id="tutorialTitle">GETTING STARTED</h2>
+      <p id="tutorialText">Select the Machine Hall to begin production.</p>
+      <button class="primary" data-action="tutorialfocus" id="tutorialShow">SHOW ME</button>
+    </section>
     <div class="hidden" id="activityHud"></div>
     <div class="hidden" id="eventHud"></div>
 
@@ -109,11 +119,11 @@
   <div id="welcome">
     <div class="welcome-card">
       <div class="eyebrow">NOVA FOUNDRY / OVERLOOK</div>
-      <h1>Your foundry is the interface.</h1>
-      <p>Click departments in the world to manage production, upgrades, missions, research and more.</p>
+      <h1>Start small. Build outward.</h1>
+      <p>Your foundry grows as you do. Begin with production, upgrades and missions; new facilities appear only when they become useful.</p>
       <button class="primary large" id="enter">Enter the foundry <span>→</span></button>
       <div class="welcome-help">
-        Hover a building to identify it.<br>
+        Select buildings in the world to manage them.<br>
         Drag to pan. Scroll or pinch to zoom. Press Esc to close a department.
       </div>
       <div id="loadNote"></div>

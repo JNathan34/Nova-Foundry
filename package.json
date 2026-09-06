@@ -1,8 +1,8 @@
 {
   "name": "nova-foundry-overlook",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
-  "description": "Offline bird’s-eye point-and-click reactor incremental game",
+  "description": "Offline bird’s-eye foundry management game with progressive building-based navigation",
   "type": "module",
   "scripts": {
     "build": "esbuild src/main.js --bundle --format=iife --target=es2020 --minify --outfile=assets/game.js"

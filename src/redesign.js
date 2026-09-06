@@ -1,5 +1,6 @@
 export function applyRedesign(nova) {
-  if (!nova || window.__NOVA_REDESIGN_APPLIED__) return;
+  if (!nova || window.__NOVA_PROGRESSIVE_REDESIGN_APPLIED__) return;
+  window.__NOVA_PROGRESSIVE_REDESIGN_APPLIED__ = true;
   window.__NOVA_REDESIGN_APPLIED__ = true;
 
   const { state, world, ui, nodes = [], areas = [] } = nova;
@@ -8,8 +9,14 @@ export function applyRedesign(nova) {
   const menuContent = $('menuContent');
   const menuTitle = $('menuTitle');
   const worldLabels = $('worldLabels');
+  const tutorialPanel = $('tutorialPanel');
+  const tutorialStepEl = $('tutorialStep');
+  const tutorialTitleEl = $('tutorialTitle');
+  const tutorialTextEl = $('tutorialText');
+  const tutorialShowEl = $('tutorialShow');
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
-  document.body.classList.add('department-redesign');
+  document.body.classList.add('department-redesign', 'progressive-foundry');
   world.hoverRing.material.opacity = 0;
 
   function interactionRecord(object) {
@@ -20,10 +27,10 @@ export function applyRedesign(nova) {
     return found;
   }
 
-  // Retire the old menu-like buildings. Their systems are re-homed below.
+  // Remove the old "menu made of buildings" layer and legacy origin clutter.
   const retiredActions = new Set([
-    'tree', 'arcade', 'research', 'rebirth', 'drones',
-    'challenges', 'travel', 'daily'
+    'tree', 'arcade', 'research', 'rebirth', 'drones', 'challenges',
+    'travel', 'daily', 'machine', 'npc'
   ]);
   for (const object of world.interactables) {
     const record = interactionRecord(object);
@@ -33,114 +40,181 @@ export function applyRedesign(nova) {
     }
   }
 
+  // Remove the giant crossroad and most fence noise from the starting plot.
+  const labPlot = world.plotGroups?.lab;
+  if (labPlot) {
+    const direct = labPlot.children || [];
+    if (direct[1]) direct[1].visible = false;
+    if (direct[2]) direct[2].visible = false;
+    for (const child of direct) {
+      if (child?.isMesh && (Math.abs(child.position.x) > 10 || Math.abs(child.position.z) > 10) &&
+          child.position.y > .2 && child.position.y < .8) {
+        child.visible = false;
+      }
+      if (!child?.isMesh && Math.abs(child.position?.x || 0) > 8 && Math.abs(child.position?.z || 0) > 8 &&
+          (child.position.x * child.position.z > 0)) {
+        child.visible = false;
+      }
+    }
+  }
+
+  // Remove unused flower-bed meshes while keeping the core and collectibles intact.
+  const labGroup = world.areaGroups?.lab;
+  if (labGroup) {
+    for (const child of labGroup.children || []) {
+      if (child?.isMesh && !child.userData?.interactable) child.visible = false;
+    }
+  }
+
+  // The core keeps its geometry but uses the new HTML hover system instead of the old sprite label.
+  world.core?.traverse?.((child) => {
+    if (child?.isSprite) child.visible = false;
+  });
+
+  // A small, intentional path network for the starting loop.
+  const pathRoot = new world.core.constructor();
+  world.scene.add(pathRoot);
+  world.box(pathRoot, 0, -.035, 2.4, 2.15, .10, 10.8, '#d7bc86');
+  world.box(pathRoot, 0, -.03, 1.0, 15.8, .10, 2.05, '#d7bc86');
+  world.box(pathRoot, 0, -.02, 7.0, 5.4, .07, 2.0, '#cdb482');
+
   const departments = [
-    { id:'workers', page:'workers', name:'WORKER OFFICE', subtitle:'People & assignments', tooltip:'Manage workers and assignments', x:-14, z:8.5, accent:'#d8b75d', kind:'workers' },
-    { id:'mission', page:'missions', name:'MISSION CONTROL', subtitle:'Contracts & objectives', tooltip:'Review contracts and objectives', x:-5, z:8.5, accent:'#d8814f', kind:'mission' },
-    { id:'archive', page:'collection', name:'FOUNDRY ARCHIVE', subtitle:'Collection & discoveries', tooltip:'Browse discoveries and collection', x:5, z:8.5, accent:'#6ea77c', kind:'archive' },
-    { id:'arcade', page:'arcade', name:'ARCADE', subtitle:'Minigames & scores', tooltip:'Play foundry minigames', x:14, z:8.5, accent:'#a071c5', kind:'arcade' },
+    { id:'upgrade', page:'tree', name:'UPGRADE LAB', subtitle:'Upgrades', tooltip:'Improve production', x:-6.8, z:1.1, accent:'#57b9b3', kind:'upgrade', unlockLevel:1 },
+    { id:'factory', page:'control', name:'MACHINE HALL', subtitle:'Production', tooltip:'Manage production', x:6.9, z:1.0, accent:'#d79a53', kind:'factory', unlockLevel:1 },
+    { id:'mission', page:'missions', name:'MISSION CONTROL', subtitle:'Objectives', tooltip:'Review objectives', x:0, z:7.6, accent:'#d8814f', kind:'mission', unlockLevel:1 },
 
-    { id:'treasury', page:'treasury', name:'TREASURY', subtitle:'Economy & performance', tooltip:'Review foundry finances', x:-14, z:0.5, accent:'#caa45b', kind:'treasury' },
-    { id:'upgrade', page:'tree', name:'UPGRADE LAB', subtitle:'Improve your foundry', tooltip:'Manage the skill tree', x:-6, z:0.5, accent:'#57b9b3', kind:'upgrade' },
-    { id:'factory', page:'control', name:'MACHINE HALL', subtitle:'Machines & production', tooltip:'Manage machines and production', x:6, z:0.5, accent:'#d79a53', kind:'factory' },
-    { id:'market', page:'market', name:'MARKETPLACE', subtitle:'Drones & specialist goods', tooltip:'Trade for foundry equipment', x:14, z:0.5, accent:'#69a990', kind:'market' },
-
-    { id:'admin', page:'admin', name:'ADMINISTRATION', subtitle:'Records & settings', tooltip:'Open administration systems', x:-14, z:-8.5, accent:'#9ba69c', kind:'admin' },
-    { id:'warehouse', page:'warehouse', name:'WAREHOUSE', subtitle:'Inventory & reserves', tooltip:'Inspect stored resources', x:-5, z:-8.5, accent:'#89989c', kind:'warehouse' },
-    { id:'quantum', page:'rebirth', name:'QUANTUM FACILITY', subtitle:'Rebirth & ascension', tooltip:'Manage prestige progression', x:5, z:-8.5, accent:'#9b73d0', kind:'quantum' },
-    { id:'research', page:'research', name:'RESEARCH CENTRE', subtitle:'New technology', tooltip:'Run research projects', x:14, z:-8.5, accent:'#668fc8', kind:'research' }
+    { id:'warehouse', page:'warehouse', name:'WAREHOUSE', subtitle:'Storage', tooltip:'Inspect reserves', x:-10.6, z:8.9, accent:'#89989c', kind:'warehouse', unlockLevel:3 },
+    { id:'workers', page:'workers', name:'WORKER OFFICE', subtitle:'Crew', tooltip:'Manage workers', x:-11.6, z:-5.8, accent:'#d8b75d', kind:'workers', unlockLevel:5 },
+    { id:'research', page:'research', name:'RESEARCH CENTRE', subtitle:'Technology', tooltip:'Run research projects', x:10.8, z:-7.7, accent:'#668fc8', kind:'research', unlockLevel:7 },
+    { id:'market', page:'market', name:'MARKETPLACE', subtitle:'Trading', tooltip:'Open the specialist exchange', x:13.8, z:4.8, accent:'#69a990', kind:'market', unlockLevel:10 },
+    { id:'archive', page:'collection', name:'FOUNDRY ARCHIVE', subtitle:'Collection', tooltip:'Browse discoveries', x:-5.7, z:-12.5, accent:'#6ea77c', kind:'archive', unlockLevel:12 },
+    { id:'arcade', page:'arcade', name:'ARCADE', subtitle:'Minigames', tooltip:'Play foundry minigames', x:5.9, z:-13.4, accent:'#a071c5', kind:'arcade', unlockLevel:15 },
+    { id:'treasury', page:'treasury', name:'TREASURY', subtitle:'Finances', tooltip:'Review foundry finances', x:14.2, z:-4.3, accent:'#caa45b', kind:'treasury', unlockLevel:18 },
+    { id:'quantum', page:'rebirth', name:'QUANTUM FACILITY', subtitle:'Rebirth', tooltip:'Manage prestige progression', x:0, z:-17.2, accent:'#9b73d0', kind:'quantum', unlockLevel:20 }
   ];
 
   const departmentByPage = new Map(departments.map((d) => [d.page, d]));
+  const departmentById = new Map(departments.map((d) => [d.id, d]));
   const Group = world.core.constructor;
 
-  function trim(g, accent) {
-    world.box(g, 0, 2.42, 0, 4.25, .13, 3.65, accent, true);
-    world.box(g, 0, .46, 1.84, 3.65, .12, .08, accent, true);
-    for (const x of [-1.15, 1.15]) {
-      world.box(g, x, 1.35, 1.83, .75, .78, .06, '#668b8b', true);
+  function isUnlocked(d) {
+    if (d.id === 'quantum') {
+      return state.level >= d.unlockLevel || state.s.rebirths > 0 ||
+        state.s.run >= state.rebirthRequirement * .35;
     }
+    return state.level >= d.unlockLevel;
+  }
+
+  function makeShell(g, d, width, depth, height = 2.25) {
+    world.box(g, 0, .05, 0, width + .65, .10, depth + .65, '#536052');
+    world.box(g, 0, 1.25, 0, width, height, depth, '#2a332c');
+    world.box(g, 0, 2.43, 0, width + .14, .14, depth + .14, '#3a443c');
+
+    const front = depth / 2 + .075;
+    world.box(g, 0, .76, front, 1.05, 1.28, .08, '#5a625b');
+    for (const x of [-width * .27, width * .27]) {
+      world.box(g, x, 1.44, front + .005, .82, .62, .07, '#72958a', true);
+    }
+    world.box(g, 0, .39, front + .28, width * .72, .12, .5, d.accent);
   }
 
   function decorate(g, d) {
     const a = d.accent;
     if (d.kind === 'upgrade') {
-      world.cylinder(g, 0, 3.05, 0, .18, 1.25, '#5f6f69');
-      world.sphere(g, 0, 3.68, 0, .42, a, true);
-      world.ring(g, 0, 3.68, 0, .72, a, .35);
-      world.ring(g, 0, 3.68, 0, .94, a, 1.25);
+      makeShell(g, d, 4.35, 3.45);
+      world.cylinder(g, 0, 2.82, -.1, .36, .46, '#61706a');
+      world.sphere(g, 0, 3.22, -.1, .38, a, true);
+      world.ring(g, 0, 3.22, -.1, .70, a, .28);
+      world.box(g, -1.45, 2.66, -.9, .48, .38, .48, '#48564f');
     } else if (d.kind === 'factory') {
-      for (const x of [-1.25, 1.25]) {
-        world.cylinder(g, x, 3.05, -.85, .28, 1.65, '#59605b');
-        world.box(g, x, 3.92, -.85, .72, .12, .72, a, true);
-      }
-      world.box(g, 0, .9, 1.9, 2.35, 1.05, .12, '#555d58');
-      for (let i = -2; i <= 2; i++) world.box(g, i * .45, .9, 1.98, .05, .95, .03, '#252b28');
-    } else if (d.kind === 'mission') {
-      world.cylinder(g, 0, 3.05, -.25, .1, 1.45, '#667069');
-      const dish = world.ring(g, 0, 3.78, -.25, .82, a, .82);
-      dish.rotation.z = .45;
-      world.sphere(g, 0, 3.78, -.25, .16, a, true);
-      world.box(g, 0, 1.1, 1.92, 2.15, .86, .08, '#704d38');
-    } else if (d.kind === 'archive') {
-      world.box(g, 0, 1.28, 1.91, 2.7, 1.18, .08, '#6b8f81', true);
-      world.box(g, 0, 2.85, 0, 2.9, .24, 2.5, '#29312c');
-      for (const x of [-1.55, 1.55]) world.box(g, x, 1.3, 1.88, .28, 1.5, .12, a, true);
-    } else if (d.kind === 'arcade') {
-      world.box(g, 0, 2.8, 1.72, 3.15, .52, .14, '#33233f');
-      world.box(g, 0, 2.8, 1.81, 2.45, .18, .05, a, true);
-      for (const x of [-1.4, 1.4]) world.ring(g, x, 1.35, 1.91, .42, a, 0);
-    } else if (d.kind === 'research') {
-      world.cylinder(g, 0, 2.9, 0, .58, .5, '#596c77');
-      for (let i = 0; i < 3; i++) world.ring(g, 0, 3.15 + i * .25, 0, .72 + i * .14, a, i * .65);
-      world.sphere(g, 0, 3.42, 0, .28, a, true);
-    } else if (d.kind === 'workers') {
-      world.box(g, 0, 3.05, 0, 2.9, .7, 2.65, '#2c332d');
-      world.box(g, 0, 3.42, 1.35, 2.1, .18, .12, a, true);
-      for (const x of [-1.35, 1.35]) world.box(g, x, 1.1, 1.91, .35, 1.6, .08, '#8a7452');
-    } else if (d.kind === 'warehouse') {
-      world.box(g, 0, 1.18, 1.92, 2.9, 1.45, .1, '#727d7a');
-      for (let i = -2; i <= 2; i++) world.box(g, i * .55, 1.18, 1.99, .05, 1.35, .03, '#303733');
+      makeShell(g, d, 5.35, 3.75, 2.35);
       for (const x of [-1.45, 1.45]) {
-        world.box(g, x, .48, -1.35, .82, .82, .82, '#6e5c46');
-        world.box(g, x, .91, -1.35, .72, .08, .72, a);
+        world.cylinder(g, x, 2.92, -.72, .23, .72, '#667068');
+        world.box(g, x, 3.32, -.72, .56, .10, .56, a);
       }
+      world.box(g, 0, .48, 2.25, 3.25, .34, .72, '#667067');
+      for (let i = -3; i <= 3; i++) world.box(g, i * .42, .67, 2.25, .08, .08, .63, '#343a35');
+      world.box(g, 2.2, 1.05, 1.94, .5, 1.2, .10, a);
+    } else if (d.kind === 'mission') {
+      makeShell(g, d, 4.0, 3.25, 2.1);
+      world.cylinder(g, 0, 2.93, -.15, .09, 1.05, '#69736c');
+      const dish = world.ring(g, 0, 3.42, -.15, .62, a, .78);
+      dish.rotation.z = .36;
+      world.sphere(g, 0, 3.42, -.15, .13, a, true);
+      world.box(g, 0, .52, 1.92, 2.0, .32, .48, '#73513d');
+    } else if (d.kind === 'warehouse') {
+      makeShell(g, d, 5.7, 3.75, 2.25);
+      const front = 3.75 / 2 + .08;
+      world.box(g, 0, 1.03, front + .02, 2.9, 1.55, .09, '#66716c');
+      for (let i = -2; i <= 2; i++) world.box(g, i * .58, 1.03, front + .075, .055, 1.42, .025, '#333a36');
+      world.box(g, -2.0, 2.72, -.8, .78, .42, 1.15, '#525c57');
+    } else if (d.kind === 'workers') {
+      makeShell(g, d, 4.45, 3.25);
+      world.box(g, 0, 2.82, .45, 2.25, .36, 1.15, '#404940');
+      world.box(g, 0, 1.05, 1.92, 2.3, .14, .62, a);
+      for (const x of [-1.6, 1.6]) world.cylinder(g, x, .62, 1.95, .09, 1.05, '#7b6a4d');
+    } else if (d.kind === 'research') {
+      makeShell(g, d, 4.6, 3.55);
+      world.cylinder(g, 0, 2.86, 0, .56, .55, '#5f6d74');
+      world.sphere(g, 0, 3.20, 0, .28, a, true);
+      world.ring(g, 0, 3.20, 0, .72, a, .15);
+      world.ring(g, 0, 3.20, 0, .91, a, 1.08);
     } else if (d.kind === 'market') {
-      world.box(g, 0, 2.82, 0, 4.55, .18, 3.95, a, true);
-      for (const x of [-1.45, 0, 1.45]) world.box(g, x, 1.05, 1.9, 1.0, .85, .12, '#52635b');
-      world.ring(g, 0, 3.32, 0, .65, a, 0);
+      makeShell(g, d, 4.95, 3.4);
+      world.box(g, 0, 2.73, 1.15, 4.55, .18, 1.0, '#4c695d');
+      for (const x of [-1.5, 0, 1.5]) world.box(g, x, .55, 2.05, .82, .72, .48, '#57665e');
+      world.ring(g, 0, 3.08, -.35, .5, a, 0);
+    } else if (d.kind === 'archive') {
+      makeShell(g, d, 4.7, 3.45);
+      world.box(g, 0, 2.72, 0, 2.65, .42, 1.7, '#3c4841');
+      world.box(g, 0, 2.96, 0, 1.55, .06, 1.0, '#76978a', true);
+      world.box(g, -1.55, 1.08, 1.83, .22, 1.35, .08, a);
+      world.box(g, 1.55, 1.08, 1.83, .22, 1.35, .08, a);
+    } else if (d.kind === 'arcade') {
+      makeShell(g, d, 4.35, 3.25);
+      world.box(g, 0, 2.88, .25, 2.65, .48, .22, '#3c2a45');
+      world.box(g, 0, 2.89, .39, 1.95, .12, .08, a, true);
+      for (const x of [-1.25, 1.25]) world.ring(g, x, 1.10, 1.78, .31, a, 0);
     } else if (d.kind === 'treasury') {
-      world.cylinder(g, 0, 1.25, 1.9, 1.08, .18, '#7c7562');
-      world.ring(g, 0, 1.25, 2.02, .82, a, 0);
-      world.box(g, 0, 3.02, 0, 3.15, .5, 2.6, '#262c28');
-      world.box(g, 0, 3.31, 1.38, 2.2, .13, .08, a, true);
+      makeShell(g, d, 4.45, 3.55);
+      world.box(g, 0, 2.79, 0, 2.85, .43, 1.8, '#41473f');
+      world.cylinder(g, 0, 1.12, 1.90, .82, .16, '#6e695a');
+      world.ring(g, 0, 1.12, 2.08, .62, a, 0);
     } else if (d.kind === 'quantum') {
-      world.cylinder(g, 0, 2.95, 0, .72, .42, '#555461');
-      world.sphere(g, 0, 3.35, 0, .58, a, true);
-      for (let i = 0; i < 3; i++) world.ring(g, 0, 3.35, 0, .9 + i * .18, a, .4 + i * .65);
-    } else if (d.kind === 'admin') {
-      world.box(g, 0, 3.0, 0, 3.0, .68, 2.65, '#2c322e');
-      world.cylinder(g, 0, 3.95, -.3, .08, 1.3, '#6e7770');
-      world.box(g, .55, 4.35, -.3, 1.1, .5, .05, a, true);
+      makeShell(g, d, 5.0, 4.1, 2.3);
+      world.cylinder(g, 0, 2.85, 0, .72, .40, '#565561');
+      world.sphere(g, 0, 3.22, 0, .52, a, true);
+      world.ring(g, 0, 3.22, 0, .86, a, .30);
+      world.ring(g, 0, 3.22, 0, 1.08, a, 1.20);
     }
+  }
+
+  function makePlot(d) {
+    const g = new Group();
+    g.position.set(d.x, 0, d.z);
+    world.scene.add(g);
+    world.box(g, 0, .02, 0, 5.2, .08, 4.15, '#a9ad91');
+    world.box(g, 0, .08, 0, 4.4, .10, 3.35, '#b8b79c');
+    for (const [x,z] of [[-2.2,-1.7],[2.2,-1.7],[-2.2,1.7],[2.2,1.7]]) {
+      world.box(g, x, .42, z, .12, .82, .12, '#9b805b');
+    }
+    world.box(g, 0, .33, 1.83, 2.2, .58, .10, '#6c715f');
+    return g;
   }
 
   for (const d of departments) {
     const g = new Group();
     g.position.set(d.x, 0, d.z);
     world.scene.add(g);
-
-    world.box(g, 0, .08, 0, 5.1, .18, 4.55, '#303732');
-    world.box(g, 0, 1.35, 0, 4.25, 2.55, 3.65, '#1a211d');
-    trim(g, d.accent);
     decorate(g, d);
 
-    const halo = world.ring(g, 0, .18, 0, 2.8, d.accent);
-    halo.visible = false;
     const record = world.bind(g, d.page, null, d.name);
     record.department = d;
     d.group = g;
-    d.halo = halo;
     d.record = record;
+    d.halo = world.ring(g, 0, .15, 0, 2.85, d.accent);
+    d.halo.visible = false;
+    d.plot = makePlot(d);
 
     const label = document.createElement('div');
     label.className = 'world-label';
@@ -148,6 +222,13 @@ export function applyRedesign(nova) {
     label.innerHTML = `<span>${d.name}</span><small>${d.subtitle}</small><em></em>`;
     worldLabels.append(label);
     d.labelEl = label;
+
+    const plotLabel = document.createElement('div');
+    plotLabel.className = 'plot-label';
+    plotLabel.dataset.department = d.id;
+    plotLabel.innerHTML = `<span>FUTURE DEVELOPMENT</span><small>Foundry Level ${d.unlockLevel}</small>`;
+    worldLabels.append(plotLabel);
+    d.plotLabelEl = plotLabel;
   }
 
   function missionReady() {
@@ -174,25 +255,17 @@ export function applyRedesign(nova) {
     const s = state.s;
     if (d.id === 'upgrade') {
       const n = affordableUpgrades();
-      return { text: n ? `${n} upgrade${n === 1 ? '' : 's'} affordable` : `${s.points} skill points available`, attention: n > 0 };
+      return { text: n ? `${n} affordable upgrade${n === 1 ? '' : 's'}` : `${s.points} skill points`, attention: n > 0 };
     }
     if (d.id === 'factory') {
       const levels = s.machines.reduce((a, b) => a + b, 0);
-      return { text: state.fx.automation ? `${levels} machine levels · ${state.fmt(state.cps)}/s` : 'Automation research required', attention: false };
+      return { text: `${state.fmt(state.cps)}/s · ${levels} machine levels`, attention: false };
     }
     if (d.id === 'mission') {
       const n = missionReady();
-      return { text: n ? `${n} contract reward${n === 1 ? '' : 's'} ready` : 'Contracts tracked', attention: n > 0 };
+      return { text: n ? `${n} reward${n === 1 ? '' : 's'} ready` : 'Objectives available', attention: n > 0 };
     }
-    if (d.id === 'archive') return { text: `${s.collected.length} / 50 energy shards`, attention: s.collected.length >= 45 && s.collected.length < 50 };
-    if (d.id === 'arcade') return { text: `${s.tokens} arcade tokens`, attention: false };
-    if (d.id === 'research') {
-      if (s.researchJob) {
-        const done = Date.now() >= s.researchJob.end;
-        return { text: done ? 'Research complete!' : 'Research in progress', attention: done };
-      }
-      return { text: 'Research bay idle', attention: false };
-    }
+    if (d.id === 'warehouse') return { text: `${state.offlineHours}h reserve`, attention: false };
     if (d.id === 'workers') {
       const ready =
         (!s.npcClaims.includes('engineer') && s.lifetime >= 100000 ? 1 : 0) +
@@ -201,52 +274,93 @@ export function applyRedesign(nova) {
         (!s.npcClaims.includes('explorer') && s.discovered.length >= 6 ? 1 : 0);
       return { text: ready ? `${ready} assignment${ready === 1 ? '' : 's'} ready` : 'Crew assignments', attention: ready > 0 };
     }
-    if (d.id === 'warehouse') return { text: `${state.offlineHours}h reserve · ${s.collected.length} shards`, attention: false };
-    if (d.id === 'market') return { text: `${s.dust} stardust · ${s.droneCopies.reduce((a,b)=>a+b,0)} drones`, attention: false };
-    if (d.id === 'treasury') return { text: `+${state.fmt(state.cps)}/s · ${state.fmt(s.energy)} energy`, attention: false };
+    if (d.id === 'research') {
+      if (s.researchJob) return { text: Date.now() >= s.researchJob.end ? 'Research complete' : 'Research in progress', attention: Date.now() >= s.researchJob.end };
+      return { text: 'Research bay idle', attention: false };
+    }
+    if (d.id === 'market') return { text: `${s.dust} stardust`, attention: false };
+    if (d.id === 'archive') return { text: `${s.collected.length}/50 shards`, attention: false };
+    if (d.id === 'arcade') return { text: `${s.tokens} arcade tokens`, attention: false };
+    if (d.id === 'treasury') return { text: `+${state.fmt(state.cps)}/s`, attention: false };
     if (d.id === 'quantum') {
       const ready = s.run >= state.rebirthRequirement;
-      return { text: ready ? `Rebirth ready · +${state.fmt(state.rebirthGain)} cores` : `${state.fmt(s.run)} / ${state.fmt(state.rebirthRequirement)}`, attention: ready };
+      return { text: ready ? `Rebirth ready · +${state.fmt(state.rebirthGain)} cores` : 'Prestige systems', attention: ready };
     }
-    return { text: `${s.achievements.length} achievements · settings`, attention: false };
+    return { text:'', attention:false };
   }
 
-  let statusClock = 0;
+  function visiblePlots() {
+    const locked = departments.filter((d) => !isUnlocked(d)).sort((a,b) => a.unlockLevel - b.unlockLevel);
+    return new Set(locked.slice(0, 2).map((d) => d.id));
+  }
+
+  function projectElement(group, element, y, maxWorldSize = 70) {
+    const p = group.position.clone();
+    group.getWorldPosition(p);
+    p.y += y;
+    p.project(world.camera);
+    const visible = p.z > -1 && p.z < 1 && p.x > -1.10 && p.x < 1.10 &&
+      p.y > -1.10 && p.y < 1.10 && world.size < maxWorldSize;
+    if (!visible) {
+      element.style.setProperty('--distance-opacity', '0');
+      return;
+    }
+    element.style.left = `${(p.x * .5 + .5) * innerWidth}px`;
+    element.style.top = `${(-p.y * .5 + .5) * innerHeight}px`;
+    element.style.setProperty('--distance-opacity',
+      String(Math.max(.42, 1 - Math.max(0, world.size - 44) / 38)));
+  }
+
+  let statusClock = 1;
   function updateDepartmentVisuals(dt = .016) {
     statusClock += dt;
     const hovered = world.current?.department || null;
     const selected = ui.opened ? ui._activeDepartment || departmentByPage.get(ui.page) : null;
+    const plots = visiblePlots();
+    const tutorialTarget = currentTutorial()?.target || null;
+    const now = performance.now();
 
     for (const d of departments) {
-      const isHover = hovered === d;
-      const isSelected = selected === d;
-      const targetScale = isHover ? 1.045 : isSelected ? 1.025 : 1;
-      const next = state.s.settings.reduced
-        ? targetScale
-        : d.group.scale.x + (targetScale - d.group.scale.x) * .22;
-      d.group.scale.setScalar(next);
-      d.halo.visible = isHover || isSelected;
+      const unlocked = isUnlocked(d);
+      const plotVisible = !unlocked && plots.has(d.id);
+      d.group.visible = unlocked;
+      d.plot.visible = plotVisible;
+      d.labelEl.style.display = unlocked ? '' : 'none';
+      d.plotLabelEl.style.display = plotVisible ? '' : 'none';
 
-      d.labelEl.classList.toggle('hovered', isHover);
-      d.labelEl.classList.toggle('selected', isSelected);
+      if (unlocked) {
+        const isHover = hovered === d;
+        const isSelected = selected === d;
+        const isTutorial = tutorialTarget === d.id;
+        const pulse = isTutorial && !state.s.settings.reduced ? Math.sin(now / 260) * .018 : 0;
+        const targetScale = (isHover ? 1.045 : isSelected ? 1.025 : 1) + pulse;
 
-      const p = d.group.position.clone();
-      d.group.getWorldPosition(p);
-      p.y += 4.45;
-      p.project(world.camera);
-      const visible = p.z > -1 && p.z < 1 && p.x > -1.12 && p.x < 1.12 && p.y > -1.12 && p.y < 1.12 && world.size < 78;
-      if (visible) {
-        d.labelEl.style.left = `${(p.x * .5 + .5) * innerWidth}px`;
-        d.labelEl.style.top = `${(-p.y * .5 + .5) * innerHeight}px`;
-        d.labelEl.style.setProperty('--distance-opacity', String(Math.max(.38, 1 - Math.max(0, world.size - 46) / 42)));
-      } else {
-        d.labelEl.style.setProperty('--distance-opacity', '0');
+        let constructionY = 1;
+        if (d.constructStart) {
+          const t = Math.min(1, (now - d.constructStart) / 2400);
+          constructionY = .08 + .92 * (1 - Math.pow(1 - t, 3));
+          if (t >= 1) d.constructStart = 0;
+        }
+
+        const next = state.s.settings.reduced
+          ? targetScale
+          : d.group.scale.x + (targetScale - d.group.scale.x) * .22;
+        d.group.scale.set(next, next * constructionY, next);
+        d.halo.visible = isHover || isSelected || isTutorial;
+
+        d.labelEl.classList.toggle('hovered', isHover);
+        d.labelEl.classList.toggle('selected', isSelected);
+        d.labelEl.classList.toggle('tutorial-target', isTutorial);
+        projectElement(d.group, d.labelEl, 4.25);
+      } else if (plotVisible) {
+        projectElement(d.plot, d.plotLabelEl, 1.45, 58);
       }
     }
 
-    if (statusClock > .3) {
+    if (statusClock > .35) {
       statusClock = 0;
       for (const d of departments) {
+        if (!isUnlocked(d)) continue;
         const status = departmentStatus(d);
         const em = d.labelEl.querySelector('em');
         em.textContent = status.text;
@@ -259,8 +373,10 @@ export function applyRedesign(nova) {
   world.update = function redesignedWorldUpdate(dt) {
     originalWorldUpdate(dt);
     updateDepartmentVisuals(dt);
+    renderTutorial();
   };
 
+  // No permanent system navigation.
   const originalNav = ui.nav.bind(ui);
   ui.nav = function noPermanentSystemNav() {
     $('menuNav').innerHTML = '';
@@ -276,6 +392,9 @@ export function applyRedesign(nova) {
   const originalRebirthView = ui.rebirthView.bind(ui);
   const originalDronesView = ui.dronesView.bind(ui);
   const originalSettingsView = ui.settingsView.bind(ui);
+  const originalTreeView = ui.treeView.bind(ui);
+  const originalTreeGraph = ui.treeGraph.bind(ui);
+  const originalInspector = ui.inspector.bind(ui);
 
   function intro(kicker, title, copy, metrics = '') {
     return `<div class="department-intro">
@@ -292,140 +411,157 @@ export function applyRedesign(nova) {
     return `<div class="dept-metric"><span>${label}</span><strong>${value}</strong>${sub ? `<small>${sub}</small>` : ''}</div>`;
   }
 
+  function areaNameForMachine(i) {
+    const parent = world.machineGroups[i]?.parent;
+    const areaEntry = Object.entries(world.areaGroups).find(([, g]) => g === parent);
+    const areaId = areaEntry?.[0] || 'lab';
+    return areas.find((a) => a.id === areaId)?.name || areaId;
+  }
+
   ui.controlView = function factoryView() {
-    const machineRecords = world.machineGroups
+    const records = world.machineGroups
       .map((group) => interactionRecord(group))
       .filter((r) => r?.action === 'machine')
       .sort((a, b) => a.data - b.data);
 
-    const floor = machineRecords.map((r) => {
+    const opened = records.filter((r) => {
       const i = Number(r.data);
-      const level = state.s.machines[i];
       const parent = world.machineGroups[i]?.parent;
       const areaEntry = Object.entries(world.areaGroups).find(([, g]) => g === parent);
-      const areaId = areaEntry?.[0] || 'lab';
-      const areaName = areas.find((a) => a.id === areaId)?.name || areaId;
-      const open = state.s.areas.includes(areaId);
-      const running = open && level > 0;
-      const status = !open ? 'OFFLINE' : running ? 'RUNNING' : 'IDLE';
+      return state.s.areas.includes(areaEntry?.[0] || 'lab');
+    });
+
+    const visibleCount = Math.min(opened.length, Math.max(1, 1 + Math.floor((state.level - 1) / 4)));
+    const machineCards = opened.slice(0, visibleCount).map((r, index) => {
+      const i = Number(r.data);
+      const level = state.s.machines[i];
+      const running = level > 0;
       const q1 = state.quote(i, 1);
-      const q10 = state.quote(i, 10);
-      const disabled1 = !state.fx.automation || !open || state.s.energy < q1.cost || q1.n < 1;
-      const disabled10 = !state.fx.automation || !open || state.s.energy < q10.cost || q10.n < 1;
-      return `<article class="machine-unit">
-        <div class="machine-head">
-          <div>
-            <span class="machine-sector">${areaName}</span>
-            <h3>${r.label}</h3>
-          </div>
-          <span class="machine-status state-${status.toLowerCase()}">${status}</span>
+      const starter = i === 0 && level === 0;
+      return `<article class="machine-summary ${index === 0 ? 'featured-machine' : ''}">
+        <div>
+          <span class="machine-sector">${areaNameForMachine(i)}</span>
+          <h3>${r.label}</h3>
+          <b class="machine-status state-${running ? 'running' : 'idle'}">${running ? 'RUNNING' : 'IDLE'}</b>
         </div>
-        <div class="machine-output">
-          <span>OUTPUT</span>
+        <div class="machine-primary-value">
+          <span>PRODUCTION</span>
           <strong>${state.fmt(state.machineRate(i))}<small>/s</small></strong>
         </div>
-        <div class="machine-specs">
+        <div class="machine-simple-meta">
           <span>Level <b>${level}</b></span>
-          <span>Milestone <b>${state.milestone(level)}×</b></span>
+          <span>${running ? `${state.milestone(level)}× milestone` : 'Not commissioned'}</span>
         </div>
-        <div class="machine-actions">
-          <button data-action="factoryinspect" data-i="${i}">Inspect</button>
-          <button data-action="machinebuy" data-i="${i}" data-n="1" ${disabled1 ? 'disabled' : ''}>Upgrade ×1 · ${state.fmt(q1.cost)} ϟ</button>
-          <button data-action="machinebuy" data-i="${i}" data-n="10" ${disabled10 ? 'disabled' : ''}>×10 · ${state.fmt(q10.cost)} ϟ</button>
+        <div class="machine-primary-action">
+          ${starter
+            ? `<button class="primary" data-action="startermachine" data-i="${i}">START MACHINE</button>`
+            : `<button class="primary" data-action="factoryinspect" data-i="${i}">MANAGE</button>`}
+          ${!starter && running ? `<button class="quiet-action" data-action="machinebuy" data-i="${i}" data-n="1" ${state.s.energy < q1.cost || q1.n < 1 ? 'disabled' : ''}>Upgrade · ${state.fmt(q1.cost)} ϟ</button>` : ''}
         </div>
       </article>`;
     }).join('');
 
-    const metrics =
-      metric('PRODUCTION', `${state.fmt(state.cps)}/s`) +
-      metric('MACHINE LEVELS', state.s.machines.reduce((a,b)=>a+b,0)) +
-      metric('RUN ENERGY', state.fmt(state.s.run));
-
+    const hidden = Math.max(0, opened.length - visibleCount);
     return `<div class="factory-interface">
-      ${intro('MACHINE HALL', 'Production floor', 'Monitor every production unit from one industrial control surface. Individual machines can still be inspected directly in the world.', metrics)}
-      ${!state.fx.automation ? '<div class="department-alert">Unlock Basic automation in the Upgrade Lab before machines can be built.</div>' : ''}
-      <div class="machine-floor">${floor}</div>
-      <div class="factory-subsystem-title">FACILITY INFRASTRUCTURE</div>
-      <div class="infrastructure-grid">${[
-        ['Cooling system','+10% manual energy'],
-        ['Power grid','+10% passive energy'],
-        ['Network system','+1 automatic pulse/sec'],
-        ['Storage system','+1h offline reserve'],
-        ['Research network','+10% XP gain']
-      ].map(([name,effect],i)=>{
-        const level=state.s.facility[i],cost=1000*2**level;
-        return `<article class="infrastructure-card"><span>LV ${level}</span><h3>${name}</h3><p>${effect} per level.</p><button data-action="facility" data-i="${i}" ${state.s.energy<cost||level>=50?'disabled':''}>Upgrade · ${state.fmt(cost)} ϟ</button></article>`;
-      }).join('')}</div>
+      ${intro('MACHINE HALL', 'Manage production.', 'Keep the production floor simple: see what is running, then open a machine only when you need its detailed controls.',
+        metric('OUTPUT', `${state.fmt(state.cps)}/s`) +
+        metric('RUNNING', state.s.machines.filter(Boolean).length))}
+      <div class="machine-summary-grid">${machineCards}</div>
+      ${hidden ? `<div class="future-upgrades-note">More production lines unlock as your foundry grows.</div>` : ''}
+      <details class="advanced-disclosure">
+        <summary>Facility infrastructure</summary>
+        <p>Advanced systems are tucked away until you need them.</p>
+        <div class="infrastructure-grid">${[
+          ['Cooling system','+10% manual energy'],
+          ['Power grid','+10% passive energy'],
+          ['Network system','+1 automatic pulse/sec'],
+          ['Storage system','+1h offline reserve'],
+          ['Research network','+10% XP gain']
+        ].map(([name,effect],i)=>{
+          const level=state.s.facility[i],cost=1000*2**level;
+          return `<article class="infrastructure-card"><span>LV ${level}</span><h3>${name}</h3><p>${effect} per level.</p><button data-action="facility" data-i="${i}" ${state.s.energy<cost||level>=50?'disabled':''}>Upgrade · ${state.fmt(cost)} ϟ</button></article>`;
+        }).join('')}</div>
+      </details>
     </div>`;
   };
 
   ui.missionsView = function missionView() {
     const ready = missionReady();
-    const metrics =
-      metric('REWARDS READY', ready) +
-      metric('COMPLETED', state.s.stats.quests) +
-      metric('STARDUST', state.fmt(state.s.dust));
+    const early = state.level < 5;
+    const machineGoal = 3;
+    const machineProgress = Math.min(machineGoal, state.s.machines[0] || 0);
+    const earlyObjective = `<article class="current-contract">
+      <div>
+        <span>CURRENT OBJECTIVE</span>
+        <h3>Stabilise your first production line</h3>
+        <p>Upgrade the Energy Collector to Level ${machineGoal}.</p>
+      </div>
+      <strong>${machineProgress} / ${machineGoal}</strong>
+      <div class="thin-bar"><i style="width:${machineProgress / machineGoal * 100}%"></i></div>
+    </article>`;
+    const board = originalMissionsView();
     return `<div class="mission-interface">
-      ${intro('MISSION CONTROL', 'Contracts & objectives', 'Track daily and weekly contracts from the control room. Completed work can be claimed here.', metrics)}
-      <div class="mission-supply"><span>DAILY LOGISTICS DROP</span><button data-action="daily">${state.s.daily.date === state.calendar() ? 'Collected today' : 'Collect supply'}</button></div>
-      <div class="contract-board">${originalMissionsView()}</div>
+      ${intro('MISSION CONTROL', 'What should I do next?', early
+        ? 'One objective is enough while you learn the core loop.'
+        : 'Focus on the next useful objective; open the full contract board only when you want more.',
+        metric('REWARDS READY', ready) + metric('COMPLETED', state.s.stats.quests))}
+      ${early ? earlyObjective : `<div class="contract-board">${board}</div>`}
+      ${early ? `<details class="advanced-disclosure"><summary>View full contract board</summary><div class="contract-board">${board}</div></details>` : ''}
+      <details class="advanced-disclosure services-disclosure">
+        <summary>Foundry services</summary>
+        <div class="service-links">
+          <button data-action="daily">${state.s.daily.date === state.calendar() ? 'Daily supply collected' : 'Collect daily supply'}</button>
+          <button data-action="open" data-page="travel">Facility map</button>
+          <button data-action="open" data-page="settings">Settings</button>
+          <button data-action="open" data-page="achievements">Achievements</button>
+          <button data-action="open" data-page="stats">Statistics</button>
+          <button data-action="open" data-page="challenges" ${state.s.rebirths ? '' : 'disabled'}>Challenges</button>
+        </div>
+      </details>
     </div>`;
   };
 
   ui.collectionView = function archiveView() {
-    const metrics =
-      metric('SHARDS', `${state.s.collected.length}/50`) +
-      metric('DISCOVERED SECTORS', `${state.s.discovered.length}/10`) +
-      metric('REACTOR SKINS', state.s.skins.length);
     return `<div class="archive-interface">
-      ${intro('FOUNDRY ARCHIVE', 'Discovery catalogue', 'A quieter gallery for shards, reactor appearances, artefacts and discoveries recovered across the facility.', metrics)}
+      ${intro('FOUNDRY ARCHIVE', 'Collection.', 'Discovered items stay visual and calm; unknown discoveries remain out of the way.',
+        metric('SHARDS', `${state.s.collected.length}/50`) + metric('SECTORS', `${state.s.discovered.length}/10`))}
       <div class="archive-gallery">${originalCollectionView()}</div>
     </div>`;
   };
 
   ui.arcadeView = function arcadeDepartmentView() {
-    const metrics =
-      metric('TOKENS', state.s.tokens) +
-      metric('GAMES PLAYED', state.s.stats.games) +
-      metric('WINS', state.s.stats.wins);
     return `<div class="arcade-interface">
-      ${intro('ARCADE', 'Reactor recreation deck', 'Short skill challenges with scores, tokens and foundry rewards.', metrics)}
+      ${intro('ARCADE', 'Optional side challenges.', 'A lighter break from production with scores, tokens and foundry rewards.',
+        metric('TOKENS', state.s.tokens) + metric('BEST RUNS', state.s.stats.wins))}
       <div class="arcade-cabinets">${originalArcadeView()}</div>
     </div>`;
   };
 
   ui.researchView = function researchDepartmentView() {
-    const job = state.s.researchJob;
-    const metrics =
-      metric('ACTIVE PROJECT', job ? 'RUNNING' : 'IDLE') +
-      metric('PROJECT LEVELS', state.s.research.reduce((a,b)=>a+b,0)) +
-      metric('RESEARCH RESERVE', state.fmt(state.s.energy));
     if (!state.s.areas.includes('research')) {
       return `<div class="research-interface">
-        ${intro('RESEARCH CENTRE', 'Technology projects', 'The centre is physically present, but its laboratory network is still offline.', metrics)}
-        <div class="department-lock"><span>RESEARCH NETWORK OFFLINE</span><h3>Open the Research Wing sector</h3><p>Progress through Exploration in the Upgrade Lab and earn enough run energy to bring the research network online.</p></div>
+        ${intro('RESEARCH CENTRE', 'New technology.', 'The building is ready, but its network still needs an Exploration unlock.')}
+        <div class="department-lock"><span>NETWORK OFFLINE</span><h3>Open the Research Wing</h3><p>Continue progressing through Exploration in the Upgrade Lab.</p></div>
       </div>`;
     }
     return `<div class="research-interface">
-      ${intro('RESEARCH CENTRE', 'Technology projects', 'Research unlocks durable technological improvements and runs on its own timer.', metrics)}
+      ${intro('RESEARCH CENTRE', 'New technology.', 'Research unlocks durable improvements and runs on its own timer.',
+        metric('STATUS', state.s.researchJob ? 'RUNNING' : 'IDLE') + metric('PROJECT LEVELS', state.s.research.reduce((a,b)=>a+b,0)))}
       <div class="research-projects">${originalResearchView()}</div>
     </div>`;
   };
 
   ui.rebirthView = function quantumDepartmentView() {
-    const metrics =
-      metric('FOUNDRY VALUE', state.fmt(state.s.run)) +
-      metric('RESTART REWARD', `+${state.fmt(state.rebirthGain)} cores`) +
-      metric('REBIRTHS', state.s.rebirths);
     return `<div class="quantum-interface">
-      ${intro('QUANTUM FACILITY', 'Prestige reactor', 'Review exactly what a restart changes before committing to a quantum rebirth or later prestige layer.', metrics)}
+      ${intro('QUANTUM FACILITY', 'Rebirth & ascension.', 'Review what will reset and what will stay before committing.',
+        metric('FOUNDRY VALUE', state.fmt(state.s.run)) + metric('RESTART REWARD', `+${state.fmt(state.rebirthGain)} cores`))}
       <div class="quantum-core-panel">${originalRebirthView()}</div>
     </div>`;
   };
 
   ui.workersView = function workersView() {
     const workers = [
-      { id:'engineer', name:'Chief Engineer', role:'Foundry Operations', trait:'Precision Planner', assignment:'Origin Laboratory', value:state.s.lifetime, goal:100000, objective:'Generate 100K lifetime energy' },
+      { id:'engineer', name:'Chief Engineer', role:'Foundry Operations', trait:'Precision Planner', assignment:'Origin', value:state.s.lifetime, goal:100000, objective:'Generate 100K lifetime energy' },
       { id:'scientist', name:'Dr. Lyra', role:'Research Scientist', trait:'Systems Thinker', assignment:'Research Centre', value:Object.keys(state.s.skills).length, goal:12, objective:'Unlock 12 skill nodes' },
       { id:'technician', name:'Technician Omi', role:'Machine Technician', trait:'Fast Hands', assignment:'Machine Hall', value:state.s.machines.reduce((a,b)=>a+b,0), goal:25, objective:'Own 25 machine levels' },
       { id:'explorer', name:'Explorer Vega', role:'Survey Specialist', trait:'Pathfinder', assignment:'Field Operations', value:state.s.discovered.length, goal:6, objective:'Discover 6 facility areas' }
@@ -435,12 +571,7 @@ export function applyRedesign(nova) {
       const ready = w.value >= w.goal;
       return `<article class="worker-card ${ready && !claimed ? 'ready' : ''}">
         <div class="worker-avatar">${w.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
-        <div class="worker-main">
-          <span>${w.role}</span><h3>${w.name}</h3>
-          <div class="worker-tags"><b>${w.trait}</b><b>${w.assignment}</b></div>
-          <p>${w.objective}</p>
-          <div class="worker-progress"><i style="width:${Math.min(100, w.value / w.goal * 100)}%"></i></div>
-        </div>
+        <div class="worker-main"><span>${w.role}</span><h3>${w.name}</h3><p>${w.assignment} · ${w.trait}</p></div>
         <div class="worker-side">
           <strong>${state.fmt(Math.min(w.value,w.goal))} / ${state.fmt(w.goal)}</strong>
           <button data-action="npcclaim" data-id="${w.id}" ${claimed || !ready ? 'disabled' : ''}>${claimed ? 'Claimed' : ready ? 'Claim reward' : 'In progress'}</button>
@@ -448,7 +579,7 @@ export function applyRedesign(nova) {
       </article>`;
     }).join('');
     return `<div class="workers-interface">
-      ${intro('WORKER OFFICE', 'Crew roster', 'Review specialist roles, traits, assignments and progression rewards.', metric('CREW', '4') + metric('ASSIGNMENTS COMPLETE', state.s.npcClaims.length))}
+      ${intro('WORKER OFFICE', 'Crew & assignments.', 'See who is doing what, then act only when an assignment is ready.', metric('CREW', '4') + metric('READY', workers.filter(w => w.value >= w.goal && !state.s.npcClaims.includes(w.id)).length))}
       <div class="worker-roster">${rows}</div>
     </div>`;
   };
@@ -456,39 +587,34 @@ export function applyRedesign(nova) {
   ui.warehouseView = function warehouseView() {
     const s = state.s;
     const stocks = [
-      ['ENERGY RESERVE', state.fmt(s.energy), 'Current spendable energy'],
-      ['STARDUST', state.fmt(s.dust), 'Specialist currency'],
-      ['QUANTUM CORES', state.fmt(s.cores), 'Prestige resource'],
-      ['ARCADE TOKENS', state.fmt(s.tokens), 'Recreation exchange'],
-      ['ENERGY SHARDS', `${s.collected.length} / 50`, 'Recovered discoveries'],
-      ['SINGULARITY SHARDS', state.fmt(s.shards), 'Ascension resource'],
-      ['DRONE COMPONENTS', state.fmt(s.droneCopies.reduce((a,b)=>a+b,0)), 'Companion inventory'],
-      ['REACTOR FINISHES', state.s.skins.length, 'Unlocked visual signatures']
+      ['ENERGY RESERVE', state.fmt(s.energy), 'Spendable energy'],
+      ...(state.level >= 10 ? [['STARDUST', state.fmt(s.dust), 'Specialist currency']] : []),
+      ...(s.tokens > 0 || state.level >= 15 ? [['ARCADE TOKENS', state.fmt(s.tokens), 'Arcade exchange']] : []),
+      ...(isUnlocked(departmentById.get('quantum')) ? [['QUANTUM CORES', state.fmt(s.cores), 'Prestige resource']] : []),
+      ['ENERGY SHARDS', `${s.collected.length} / 50`, 'Recovered discoveries']
     ];
     return `<div class="warehouse-interface">
-      ${intro('WAREHOUSE', 'Foundry reserves', 'A scan-friendly view of resources and stored progression items.', metric('OFFLINE RESERVE', `${state.offlineHours}h`) + metric('STORAGE SYSTEM', `LV ${s.facility[3]}`))}
-      <div class="warehouse-capacity"><span>OFFLINE RESERVE CAPACITY</span><strong>${state.offlineHours} HOURS</strong><div><i style="width:${Math.min(100,state.offlineHours/48*100)}%"></i></div></div>
+      ${intro('WAREHOUSE', 'Storage & reserves.', 'A scan-friendly inventory. Advanced currencies appear only after you discover them.',
+        metric('OFFLINE RESERVE', `${state.offlineHours}h`) + metric('STORAGE', `LV ${s.facility[3]}`))}
       <div class="warehouse-grid">${stocks.map(([name,value,sub])=>`<article class="stock-card"><span>${name}</span><strong>${value}</strong><small>${sub}</small></article>`).join('')}</div>
     </div>`;
   };
 
   ui.treasuryView = function treasuryView() {
     const s = state.s;
-    const cps = state.cps;
-    const lifetimeRate = s.lifetime ? Math.min(100, s.run / s.lifetime * 100) : 0;
     return `<div class="treasury-interface">
-      ${intro('TREASURY', 'Financial dashboard', 'A compact operational view of current energy, production and long-term foundry value.', metric('NET PRODUCTION', `+${state.fmt(cps)}/s`) + metric('CURRENT ENERGY', state.fmt(s.energy)) + metric('LIFETIME VALUE', state.fmt(s.lifetime)))}
-      <div class="finance-grid">
-        <article class="finance-card featured"><span>NET PRODUCTION</span><strong>+${state.fmt(cps)}<small>/s</small></strong><p>Passive production after current upgrades and boosts.</p></article>
-        <article class="finance-card"><span>CURRENT RUN</span><strong>${state.fmt(s.run)}</strong><div class="finance-bar"><i style="width:${lifetimeRate}%"></i></div><small>${lifetimeRate.toFixed(1)}% of lifetime energy</small></article>
-        <article class="finance-card"><span>EXPENSES</span><strong>0<small>/s</small></strong><p>Nova Foundry has no recurring machine upkeep in the current ruleset.</p></article>
-        <article class="finance-card"><span>ASSET DEPTH</span><strong>${s.machines.reduce((a,b)=>a+b,0)}</strong><p>Total machine levels across ${s.areas.length} active sectors.</p></article>
+      ${intro('TREASURY', 'Financial overview.', 'Only the numbers that matter for your next decision.',
+        metric('NET PRODUCTION', `+${state.fmt(state.cps)}/s`) + metric('CURRENT ENERGY', state.fmt(s.energy)))}
+      <div class="finance-focus">
+        <span>NET PRODUCTION</span>
+        <strong>+${state.fmt(state.cps)}<small>/s</small></strong>
+        <p>Passive production after current upgrades and boosts.</p>
       </div>
-      <div class="treasury-ledger">
-        <div><span>Lifetime energy</span><strong>${state.fmt(s.lifetime)}</strong></div>
+      <div class="simple-ledger">
         <div><span>Run energy</span><strong>${state.fmt(s.run)}</strong></div>
-        <div><span>Stardust reserve</span><strong>${state.fmt(s.dust)}</strong></div>
-        <div><span>Quantum reserve</span><strong>${state.fmt(s.cores)}</strong></div>
+        <div><span>Lifetime energy</span><strong>${state.fmt(s.lifetime)}</strong></div>
+        ${s.dust ? `<div><span>Stardust</span><strong>${state.fmt(s.dust)}</strong></div>` : ''}
+        ${s.cores ? `<div><span>Quantum cores</span><strong>${state.fmt(s.cores)}</strong></div>` : ''}
       </div>
     </div>`;
   };
@@ -496,51 +622,202 @@ export function applyRedesign(nova) {
   ui.marketView = function marketView() {
     const unlocked = state.s.lifetime >= 1000;
     return `<div class="market-interface">
-      ${intro('MARKETPLACE', 'Specialist exchange', 'Spend Stardust on companion drones and related specialist equipment. Core production resources are never sold automatically.', metric('STARDUST', state.fmt(state.s.dust)) + metric('DRONES OWNED', state.s.droneCopies.reduce((a,b)=>a+b,0)))}
+      ${intro('MARKETPLACE', 'Specialist exchange.', 'Buy specialist equipment without turning the market into another dashboard.',
+        metric('STARDUST', state.fmt(state.s.dust)) + metric('DRONES', state.s.droneCopies.reduce((a,b)=>a+b,0)))}
       ${unlocked
-        ? `<div class="market-ticker"><span>FOUNDRY EXCHANGE</span><b>DRONE COMPONENTS</b><em>AVAILABLE</em></div><div class="market-listings">${originalDronesView()}</div>`
-        : `<div class="department-lock"><span>MARKET LICENSE PENDING</span><h3>Reach 1K lifetime energy</h3><p>The specialist drone exchange opens once the foundry has produced 1,000 lifetime energy.</p></div>`}
-    </div>`;
-  };
-
-  ui.adminView = function adminView() {
-    const items = [
-      ['SETTINGS','Graphics, audio, controls and save management.','settings','⚙',false],
-      ['ACHIEVEMENTS',`${state.s.achievements.length} completed achievements.`,'achievements','✦',false],
-      ['CHALLENGES',state.s.rebirths ? 'Optional rule modifiers and challenge runs.' : 'Available after your first rebirth.','challenges','◇',!state.s.rebirths],
-      ['STATISTICS','Lifetime production and progression records.','stats','▥',false]
-    ];
-    return `<div class="admin-interface">
-      ${intro('ADMINISTRATION', 'Foundry administration', 'Secondary systems live here instead of in a permanent “More” menu.', metric('ACHIEVEMENTS', state.s.achievements.length) + metric('SECTORS', `${state.s.discovered.length}/10`))}
-      <div class="admin-grid">${items.map(([name,copy,page,icon,disabled])=>`<article class="admin-card"><span>${icon}</span><h3>${name}</h3><p>${copy}</p><button data-action="open" data-page="${page}" ${disabled?'disabled':''}>${disabled?'Locked':'Open'}</button></article>`).join('')}</div>
+        ? `<div class="market-listings">${originalDronesView()}</div>`
+        : `<div class="department-lock"><span>MARKET LICENSE PENDING</span><h3>Reach 1K lifetime energy</h3><p>The exchange opens once the foundry has produced 1,000 lifetime energy.</p></div>`}
     </div>`;
   };
 
   ui.settingsView = function settingsDepartmentView() {
     return originalSettingsView()
-      .replace('Use Origin to return to the core and All plots for an overview.', 'Press Home to return to the Origin core. The world itself is the navigation map.')
-      .replace('Keyboard shortcuts: T opens Skills, M opens the Map, Tab opens the menu. Arrow keys pan the map. Home focuses Origin.', 'Keyboard: Arrow keys pan the map, Home focuses Origin, Esc closes a department, and holding Alt reveals extra building status.');
+      .replace('Use Origin to return to the core and All plots for an overview.', 'Press Home to return to the Energy Core. Buildings are your navigation.')
+      .replace('Keyboard shortcuts: T opens Skills, M opens the Map, Tab opens the menu. Arrow keys pan the map. Home focuses Origin.', 'Keyboard: Arrow keys pan, Home focuses Origin, Esc closes a department, and Alt reveals extra building status.');
+  };
+
+  // --- New, spacious main skill tree ---
+  const categories = [
+    { id:'auto', label:'PRODUCTION', description:'Produce more resources.', icon:'⚙' },
+    { id:'power', label:'SPEED', description:'Increase active output and reactor throughput.', icon:'ϟ' },
+    { id:'offline', label:'EFFICIENCY', description:'Improve storage, automation and away-time gains.', icon:'◫' },
+    { id:'luck', label:'FORTUNE', description:'Rare signals and critical gains.', icon:'◇', level:12 },
+    { id:'explore', label:'EXPANSION', description:'Open new sectors and advanced systems.', icon:'⌁', level:12 },
+    { id:'rebirth', label:'REBIRTH', description:'Make future foundries stronger.', icon:'⟳', level:18 }
+  ];
+
+  function category() {
+    return categories.find((c) => c.id === ui.branch) || categories[0];
+  }
+
+  function branchNodes(branch) {
+    return nodes.filter((n) => n.tree === 'main' && n.branch === branch)
+      .sort((a,b) => a.y - b.y || a.x - b.x);
+  }
+
+  function visibleBranchNodes(branch) {
+    const all = branchNodes(branch);
+    const count = Math.min(all.length, Math.max(4, 4 + Math.floor((state.level - 1) / 3)));
+    return all.slice(0, count);
+  }
+
+  function treeDepths(list) {
+    const inList = new Set(list.map((n) => n.id));
+    const memo = new Map();
+    const depth = (n) => {
+      if (memo.has(n.id)) return memo.get(n.id);
+      const req = n.requires.map((id) => nodeMap.get(id)).filter((r) => r && inList.has(r.id));
+      const d = req.length ? 1 + Math.max(...req.map(depth)) : 0;
+      memo.set(n.id, d);
+      return d;
+    };
+    list.forEach(depth);
+    return memo;
+  }
+
+  ui.treeView = function progressiveTreeView() {
+    if (this.treeType !== 'main') return originalTreeView();
+
+    if (!categories.some((c) => c.id === this.branch && (!c.level || state.level >= c.level))) {
+      this.branch = 'auto';
+    }
+    const cat = category();
+    const list = visibleBranchNodes(cat.id);
+    if (!list.some((n) => n.id === this.selected)) this.selected = list[0]?.id || this.selected;
+    const availableTabs = categories.filter((c) => !c.level || state.level >= c.level);
+
+    return `<div class="simple-tree-layout">
+      <div class="simple-tree-main">
+        <div class="skill-category-tabs">
+          ${availableTabs.map((c) => `<button data-action="branch" data-id="${c.id}" class="${this.branch===c.id?'selected':''}"><b>${c.label}</b><small>${c.description}</small></button>`).join('')}
+        </div>
+        <div class="simple-branch-header">
+          <div><span>${cat.label} PATH</span><h2>${cat.description}</h2></div>
+          <div class="skill-points-pill"><small>SKILL POINTS</small><strong>${state.s.points}</strong></div>
+        </div>
+        <div class="simple-tree-viewport" id="treeViewport">
+          <div class="simple-tree-inner" id="treeInner">${this.treeGraph()}</div>
+        </div>
+        ${branchNodes(cat.id).length > list.length ? `<div class="future-upgrades-note">More ${cat.label.toLowerCase()} upgrades unlock as your Foundry Level increases.</div>` : ''}
+      </div>
+      <aside class="selected-upgrade-panel" id="inspector">${this.inspector()}</aside>
+    </div>`;
+  };
+
+  ui.treeGraph = function simpleTreeGraph() {
+    if (this.treeType !== 'main') return originalTreeGraph();
+    const cat = category();
+    const list = visibleBranchNodes(cat.id);
+    const depths = treeDepths(list);
+    const tiers = new Map();
+    for (const n of list) {
+      const d = depths.get(n.id) || 0;
+      if (!tiers.has(d)) tiers.set(d, []);
+      tiers.get(d).push(n);
+    }
+
+    const maxDepth = Math.max(0, ...tiers.keys());
+    const width = 720;
+    const nodeW = 190;
+    const nodeH = 86;
+    const tierGap = 142;
+    const positions = new Map();
+
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const tier = tiers.get(depth) || [];
+      const total = tier.length * nodeW + Math.max(0, tier.length - 1) * 70;
+      const start = (width - total) / 2;
+      tier.forEach((n, i) => positions.set(n.id, {
+        x:start + i * (nodeW + 70),
+        y:42 + depth * tierGap
+      }));
+    }
+
+    const height = 42 + (maxDepth + 1) * tierGap + 45;
+    this.treeBox = { width, height };
+    const visibleIds = new Set(list.map((n) => n.id));
+    let paths = '';
+    for (const n of list) {
+      const to = positions.get(n.id);
+      for (const reqId of n.requires) {
+        if (!visibleIds.has(reqId)) continue;
+        const from = positions.get(reqId);
+        if (!from || !to) continue;
+        const x1 = from.x + nodeW / 2;
+        const y1 = from.y + nodeH;
+        const x2 = to.x + nodeW / 2;
+        const y2 = to.y;
+        const mid = (y1 + y2) / 2;
+        paths += `<path class="simple-tree-path ${state.s.skills[reqId] ? 'on' : ''}" d="M${x1},${y1} L${x1},${mid} L${x2},${mid} L${x2},${y2}"/>`;
+      }
+    }
+
+    return `<svg class="simple-tree-lines" width="${width}" height="${height}">${paths}</svg>
+      ${list.map((n) => {
+        const pos = positions.get(n.id);
+        const level = state.s.skills[n.id] || 0;
+        const affordable = state.available(n) && state.s.points >= state.nodeCost(n);
+        const maxed = level >= n.max;
+        const stateClass = maxed ? 'maxed' : level ? 'owned' : affordable ? 'affordable' : state.available(n) ? 'available' : 'locked';
+        return `<button data-action="node" data-id="${n.id}" class="large-skill-node ${stateClass} ${n.id===this.selected?'chosen':''}" style="left:${pos.x}px;top:${pos.y}px">
+          <span class="skill-node-icon">${cat.icon}</span>
+          <span class="skill-node-copy"><b>${n.name}</b><small>LV ${level}/${n.max>=1e6?'∞':n.max}</small></span>
+        </button>`;
+      }).join('')}`;
+  };
+
+  ui.inspector = function simpleInspector() {
+    if (this.treeType !== 'main') return originalInspector();
+    let n = nodeMap.get(this.selected);
+    const visible = visibleBranchNodes(category().id);
+    if (!n || n.tree !== 'main' || n.branch !== category().id || !visible.includes(n)) {
+      n = visible[0];
+      if (n) this.selected = n.id;
+    }
+    if (!n) return '<div class="tree-empty"><h3>No upgrades available yet.</h3></div>';
+
+    const s = state.s;
+    const level = s.skills[n.id] || 0;
+    const cost = state.nodeCost(n);
+    const available = state.available(n);
+    const maxed = level >= n.max;
+    const nextText = n.desc || 'Improves your foundry.';
+    const reqs = n.requires.map((id) => nodeMap.get(id)).filter(Boolean);
+
+    return `<div class="selected-upgrade-kicker">${category().label} UPGRADE</div>
+      <h2>${n.name}</h2>
+      <p class="selected-upgrade-desc">${nextText}</p>
+      <div class="upgrade-level-change"><span>CURRENT</span><strong>Level ${level}</strong><i>→</i><span>NEXT</span><strong>${maxed ? 'MAX' : `Level ${level + 1}`}</strong></div>
+      ${reqs.length ? `<div class="simple-requirements"><span>PREREQUISITE</span>${reqs.map((r) => `<b class="${s.skills[r.id]?'met':''}">${s.skills[r.id]?'✓':'○'} ${r.name}</b>`).join('')}</div>` : ''}
+      <div class="upgrade-cost"><span>COST</span><strong>${maxed ? '—' : `${cost} Skill Point${cost===1?'':'s'}`}</strong><small>${s.points} available</small></div>
+      <button class="primary purchase-upgrade" data-action="skillbuy" data-id="${n.id}" ${maxed || !available || s.points < cost ? 'disabled' : ''}>${maxed ? 'MAXED' : !available ? 'PREREQUISITE NEEDED' : 'PURCHASE UPGRADE'}</button>`;
+  };
+
+  // Simple tree is designed to fit, so dragging/zoom are intentionally unnecessary.
+  const originalBindTree = ui.bindTree.bind(ui);
+  ui.bindTree = function redesignedBindTree() {
+    if (this.treeType !== 'main') return originalBindTree();
   };
 
   const originalRender = ui.render.bind(ui);
   const titles = {
-    tree:['UPGRADE LAB','Skill tree'],
-    control:['MACHINE HALL','Production floor'],
-    missions:['MISSION CONTROL','Contracts & objectives'],
-    collection:['FOUNDRY ARCHIVE','Collection & discoveries'],
+    tree:['UPGRADE LAB','Upgrades'],
+    control:['MACHINE HALL','Production'],
+    missions:['MISSION CONTROL','Objectives'],
+    collection:['FOUNDRY ARCHIVE','Collection'],
     arcade:['ARCADE','Minigames'],
-    research:['RESEARCH CENTRE','Technology projects'],
-    workers:['WORKER OFFICE','Crew roster'],
-    warehouse:['WAREHOUSE','Inventory & reserves'],
-    market:['MARKETPLACE','Specialist exchange'],
-    treasury:['TREASURY','Economy & performance'],
-    rebirth:['QUANTUM FACILITY','Rebirth & ascension'],
-    admin:['ADMINISTRATION','Administration'],
-    settings:['ADMINISTRATION','Settings'],
-    achievements:['ADMINISTRATION','Achievements'],
-    challenges:['ADMINISTRATION','Challenges'],
-    stats:['ADMINISTRATION','Statistics'],
-    drones:['MARKETPLACE','Companion drones']
+    research:['RESEARCH CENTRE','Technology'],
+    workers:['WORKER OFFICE','Crew'],
+    warehouse:['WAREHOUSE','Storage'],
+    market:['MARKETPLACE','Trading'],
+    treasury:['TREASURY','Finances'],
+    rebirth:['QUANTUM FACILITY','Rebirth'],
+    settings:['MISSION CONTROL','Settings'],
+    achievements:['MISSION CONTROL','Achievements'],
+    challenges:['MISSION CONTROL','Challenges'],
+    stats:['MISSION CONTROL','Statistics'],
+    drones:['MARKETPLACE','Companion drones'],
+    travel:['MISSION CONTROL','Facility map']
   };
 
   ui.render = function redesignedRender() {
@@ -567,28 +844,46 @@ export function applyRedesign(nova) {
     }
   };
 
+  const secondaryDepartment = new Map([
+    ['travel', departmentById.get('mission')],
+    ['settings', departmentById.get('mission')],
+    ['achievements', departmentById.get('mission')],
+    ['challenges', departmentById.get('mission')],
+    ['stats', departmentById.get('mission')],
+    ['drones', departmentById.get('market')]
+  ]);
+
   const originalOpen = ui.open.bind(ui);
-  ui.open = function redesignedOpen(page = 'admin') {
-    const d = departmentByPage.get(page);
+  ui.open = function redesignedOpen(page = 'missions') {
+    const d = departmentByPage.get(page) || secondaryDepartment.get(page);
+    if (d && !isUnlocked(d)) return;
+
     const shouldFocus = d && !this._suppressDepartmentFocus;
     this._suppressDepartmentFocus = false;
 
     if (!this.opened && shouldFocus) {
-      this._worldReturn = {
-        x: world.goal.x,
-        z: world.goal.z,
-        size: world.goalSize
-      };
+      this._worldReturn = { x:world.goal.x, z:world.goal.z, size:world.goalSize };
     }
-
     if (shouldFocus) {
       this._activeDepartment = d;
       world.goal.set(d.x, 0, d.z);
-      world.goalSize = Math.max(18, Math.min(23, 20 / Math.max(.8, innerWidth / innerHeight)));
+      world.goalSize = Math.max(19, Math.min(24, 21 / Math.max(.8, innerWidth / innerHeight)));
+    }
+
+    if (page === 'tree' && this.treeType === 'main') {
+      if (!categories.some((c) => c.id === this.branch)) this.branch = 'auto';
+      if (this.branch === 'cross') this.branch = 'auto';
     }
 
     document.body.classList.add('building-ui-open');
     originalOpen(page);
+
+    const tutorial = currentTutorial();
+    if (page === 'missions' && tutorial?.step === 6) {
+      state.s.settings.tutorial = false;
+      state.save();
+      renderTutorial();
+    }
   };
 
   const originalClose = ui.close.bind(ui);
@@ -606,12 +901,12 @@ export function applyRedesign(nova) {
 
   const originalInteract = ui.interact.bind(ui);
   ui.interact = function redesignedInteract(record) {
-    if (record.department) {
+    if (record.department && isUnlocked(record.department)) {
       this._activeDepartment = record.department;
       state.emit('sound', record.department.id === 'quantum' ? 420 : 310);
       if (record.department.id === 'upgrade') {
         this.treeType = 'main';
-        if (this.branch === 'cross') this.branch = 'power';
+        if (!categories.some((c) => c.id === this.branch && (!c.level || state.level >= c.level))) this.branch = 'auto';
       }
     }
     originalInteract(record);
@@ -619,9 +914,37 @@ export function applyRedesign(nova) {
 
   const originalAction = ui.action.bind(ui);
   ui.action = async function redesignedAction(data) {
+    if (data.action === 'node' && this.treeType === 'main') {
+      this.selected = data.id;
+      const inspector = $('inspector');
+      if (inspector) inspector.innerHTML = this.inspector();
+      document.querySelectorAll('.large-skill-node').forEach((button) => {
+        button.classList.toggle('chosen', button.dataset.id === data.id);
+      });
+      return;
+    }
     if (data.action === 'factoryinspect') {
       this.machineIndex = Number(data.i);
       this.showMachine();
+      return;
+    }
+    if (data.action === 'startermachine') {
+      const i = Number(data.i);
+      if (i === 0 && !state.s.machines[0]) {
+        state.s.machines[0] = 1;
+        if (!state.s.skills['auto-0']) {
+          state.s.skills['auto-0'] = 1;
+          if (!state.s.firstSkills.includes('auto-0')) state.s.firstSkills.push('auto-0');
+        }
+        state.s.stats.purchases += 1;
+        state.recompute();
+        state.xp(8);
+        state.emit('world');
+        state.emit('machine', 0);
+        state.notice('Energy collector online · production started');
+        state.save();
+        this.render();
+      }
       return;
     }
     if (data.action === 'npcclaim' && this.page === 'workers') {
@@ -629,37 +952,128 @@ export function applyRedesign(nova) {
       this.render();
       return;
     }
-    if (data.action === 'qtree' || data.action === 'atree') {
-      this._suppressDepartmentFocus = true;
+    if (data.action === 'tutorialfocus') {
+      const step = currentTutorial();
+      const d = step?.target ? departmentById.get(step.target) : null;
+      if (d) {
+        world.goal.set(d.x, 0, d.z);
+        world.goalSize = 24;
+      }
+      return;
     }
+    if (data.action === 'qtree' || data.action === 'atree') this._suppressDepartmentFocus = true;
     return originalAction(data);
   };
+
+  function currentTutorial() {
+    const s = state.s;
+    if (!s.settings.tutorial || s.rebirths > 0 || state.level > 4) return null;
+
+    if (!s.machines[0]) {
+      if (ui.opened && ui.page === 'control') {
+        return { step:2, title:'START PRODUCTION', text:'Activate the Energy Collector. This is the only machine you need to learn right now.', target:null };
+      }
+      return { step:1, title:'GETTING STARTED', text:'Select the Machine Hall to begin production.', target:'factory' };
+    }
+
+    if (s.lifetime < 25) {
+      return { step:3, title:'PRODUCTION ONLINE', text:'Your machine now produces energy automatically. Watch the counter rise.', target:null };
+    }
+
+    const learnedUpgrade = s.firstSkills.filter((id) => id !== 'auto-0').length > 0;
+    if (!learnedUpgrade) {
+      if (ui.opened && ui.page === 'tree') {
+        return { step:5, title:'BUY AN UPGRADE', text:'Choose one clear production upgrade and purchase it.', target:null };
+      }
+      return { step:4, title:'IMPROVE PRODUCTION', text:'Visit the Upgrade Lab and spend a Skill Point.', target:'upgrade' };
+    }
+
+    if (ui.opened && ui.page === 'missions') return { step:6, title:'MISSION CONTROL', text:'Missions give you clear objectives and rewards.', target:null };
+    return { step:6, title:'YOUR NEXT OBJECTIVE', text:'Select Mission Control to see what the foundry needs next.', target:'mission' };
+  }
+
+  let lastTutorialKey = '';
+  function renderTutorial() {
+    if (!tutorialPanel) return;
+    const step = currentTutorial();
+    const key = step ? `${step.step}:${step.title}:${step.target || ''}` : 'off';
+    if (key === lastTutorialKey) return;
+    lastTutorialKey = key;
+
+    document.body.classList.toggle('tutorial-on', !!step);
+    if (!step) {
+      tutorialPanel.classList.add('hidden');
+      return;
+    }
+    tutorialPanel.classList.remove('hidden');
+    tutorialStepEl.textContent = `${step.step}/6`;
+    tutorialTitleEl.textContent = step.title;
+    tutorialTextEl.textContent = step.text;
+    tutorialShowEl.classList.toggle('hidden', !step.target);
+  }
 
   const originalPaint = ui.paint.bind(ui);
   ui.paint = function redesignedPaint() {
     originalPaint();
 
     const r = world.current;
-    if (r?.department) $('interactSub').textContent = r.department.tooltip;
+    if (r?.department && isUnlocked(r.department)) $('interactSub').textContent = r.department.tooltip;
 
     const s = state.s;
-    if (s.stats.clicks >= 5 && !state.fx.automation) {
-      $('objectiveLabel').textContent = 'OPEN THE UPGRADE LAB';
-      $('objectiveText').textContent = 'Select the Upgrade Lab and unlock Basic automation.';
+    $('productionResource')?.classList.toggle('hidden', !s.machines[0]);
+    $('dustResource')?.classList.toggle('hidden', state.level < 10);
+    $('coresResource')?.classList.toggle('hidden', !isUnlocked(departmentById.get('quantum')));
+
+    if (s.stats.clicks >= 5 && !state.fx.automation && !s.machines[0]) {
+      $('objectiveLabel').textContent = 'BUILD YOUR FIRST LINE';
+      $('objectiveText').textContent = 'Select the Machine Hall and start the Energy Collector.';
     } else if (state.fx.automation && !s.machines[0]) {
-      $('objectiveLabel').textContent = 'START THE MACHINE HALL';
-      $('objectiveText').textContent = 'Select the Machine Hall and build your first Energy collector.';
+      $('objectiveLabel').textContent = 'START PRODUCTION';
+      $('objectiveText').textContent = 'Select the Machine Hall and commission your first machine.';
     }
 
+    renderTutorial();
     if (menu.dataset.page !== this.page) menu.dataset.page = this.page;
   };
 
-  // Disable the legacy T/M/Tab menu shortcuts. Tab remains usable for keyboard focus.
+  // Construction unlock events.
+  const knownUnlocked = new Set(departments.filter(isUnlocked).map((d) => d.id));
+  state.on((type) => {
+    if (type !== 'level' && type !== 'world' && type !== 'area') return;
+    for (const d of departments) {
+      if (!knownUnlocked.has(d.id) && isUnlocked(d)) {
+        knownUnlocked.add(d.id);
+        d.constructStart = performance.now();
+        ui.notice(`NEW FACILITY · ${d.name} is now available`);
+        if (!ui.opened) {
+          const old = { x:world.goal.x, z:world.goal.z, size:world.goalSize };
+          world.goal.set(d.x, 0, d.z);
+          world.goalSize = 25;
+          setTimeout(() => {
+            if (!ui.opened) {
+              world.goal.set(old.x, 0, old.z);
+              world.goalSize = old.size;
+            }
+          }, 2800);
+        }
+      }
+    }
+  });
+
+  // Initial camera scale grows with the foundry instead of showing the late-game footprint.
+  if (!ui.opened) {
+    const levelZoom = state.level < 3 ? 27 : state.level < 7 ? 31 : state.level < 12 ? 37 : state.level < 18 ? 43 : 49;
+    world.goalSize = levelZoom;
+    world.size = Math.min(world.size, levelZoom);
+  }
+
+  // Disable legacy global menu shortcuts. Tab remains available for normal keyboard focus.
   document.addEventListener('keydown', (event) => {
     if (event.code === 'AltLeft' || event.code === 'AltRight') document.body.classList.add('info-mode');
     if (/INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
     if (event.code === 'Tab' || event.code === 'KeyT' || event.code === 'KeyM') {
       event.stopImmediatePropagation();
+      if (event.code !== 'Tab') event.preventDefault();
     }
   }, true);
   document.addEventListener('keyup', (event) => {
@@ -667,9 +1081,8 @@ export function applyRedesign(nova) {
   }, true);
   window.addEventListener('blur', () => document.body.classList.remove('info-mode'));
 
-  // Initial label position and menu cleanup.
-  updateDepartmentVisuals(.31);
+  updateDepartmentVisuals(.4);
+  renderTutorial();
   ui.nav();
   if (ui.opened) ui.render();
 }
-
