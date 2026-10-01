@@ -1,6 +1,6 @@
 # Nova Foundry — Overlook v3
 
-A bird’s-eye, point-and-click edition of Nova Foundry, with a tidy garden campus inspired by the supplied farm reference. Built with original procedural 3D scenery.
+A bird’s-eye management game with a restrained dark palette, readable interfaces and separate plots. Department buildings sit around the perimeter, the reactor has an open central clearing, and generators have a dedicated production district.
 
 ## Play
 
@@ -15,6 +15,8 @@ Extract the entire ZIP, then open `index.html` in a modern desktop browser with 
 - Esc closes the active department.
 - In the Upgrade Lab, drag the skill tree to explore it and select nodes to inspect or buy upgrades.
 - Every department building, generator and the central reactor has its own bordered, labelled plot. Roads separate the lots; generators occupy two dedicated production rows.
+- Plot labels are readable, clickable controls. Overlapping labels are hidden at wide zoom levels; zoom in to inspect a crowded area. WASD or arrow keys pan, and the small Overview / zoom controls help navigate the district.
+- Departments use spacious 14 × 12 plots around the outer edge. Older saved arrangements in the central clearing are moved to the new perimeter layout without resetting game progress.
 - Open Administration → Arrange building plots to relocate a department together with its plot. Select the building, then click clear ground. Done or Esc exits arrangement mode; Reset layout restores the original arrangement. Arrangements autosave and are included in exports.
 - Locked generator plots remain visible. Click one to inspect its unlock requirements; clicking an unlocked plot opens that generator’s controls. Sector-map travel focuses the corresponding generator plot.
 
@@ -32,6 +34,7 @@ Progress autosaves every five seconds in the browser. Use Administration → Set
 
 - `index.html` — offline game entry point.
 - `assets/style.css` — game styling.
+- `assets/clean.css` and `src/clean.js` — readable presentation, accessible plot labels, camera controls and keyboard focus handling.
 - `assets/game.js` — prebuilt browser bundle used by `index.html`.
 - `assets/redesign.js` — runtime department/building navigation layer for the prebuilt bundle.
 - `src/` — maintainable source modules used to produce the bundle, including `redesign.js`.

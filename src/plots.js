@@ -5,7 +5,7 @@ export function applyPlots({ world, state, ui }, departments) {
   const Group = world.core.constructor;
   const lots = [];
 
-  function lot(parent, id, name, accent, width = 7.2, depth = 6.6) {
+  function lot(parent, id, name, accent, width = 14, depth = 12) {
     const ground = new Group();
     ground.userData.plotId = id;
     ground.userData.plotName = name;
@@ -40,9 +40,15 @@ export function applyPlots({ world, state, ui }, departments) {
     if (object.isMesh && object.geometry === world.geometry.box && Math.abs(object.position.y + .03) < .001) object.visible = false;
   }
 
+  const perimeter = {
+    admin: [-38, -22], treasury: [-38, -4], workers: [-38, 14],
+    research: [38, -22], market: [38, -4], arcade: [38, 14],
+    upgrade: [-40, -42], warehouse: [-24, -42], quantum: [-8, -42],
+    factory: [8, -42], mission: [24, -42], archive: [40, -42]
+  };
+  const permittedPosition = (x, z) => Math.abs(x) <= 48 && z >= -50 && z <= 14 && (Math.abs(x) >= 36 || z <= -36);
   for (const d of departments) {
-    d.x = Math.abs(d.x) > 10 ? Math.sign(d.x) * 18 : Math.sign(d.x) * 6;
-    d.z = d.z > 4 ? 10 : d.z < -4 ? -10 : 0;
+    [d.x, d.z] = perimeter[d.id];
     d.group.position.set(d.x, 0, d.z);
     const ground = lot(d.group, `department-${d.id}`, d.name, d.accent);
     ground.traverse(mesh => {
@@ -55,8 +61,8 @@ export function applyPlots({ world, state, ui }, departments) {
   // Positioning is independent of the old sector groups so nothing shares a slab.
   const generatorLots = world.machineGroups.map((machine, i) => {
     const definition = MACHINES[i];
-    const x = (i % 5 - 2) * 12;
-    const z = 22 + Math.floor(i / 5) * 14;
+    const x = (i % 5 - 2) * 16;
+    const z = 26 + Math.floor(i / 5) * 14;
     world.scene.attach(machine);
     machine.position.set(x, 0, z);
     machine.children.filter(child => child.isSprite).forEach(child => child.visible = false);
@@ -78,16 +84,19 @@ export function applyPlots({ world, state, ui }, departments) {
   // Shared roads stay outside the individual plot boundaries.
   const roads = new Group();
   world.scene.add(roads);
-  for (const z of [-14.4, -5, 5, 14.4]) {
-    world.box(roads, 0, -.16, z, 47, .06, 1.15, '#657365');
+  world.box(roads, 0, -.16, -33, 98, .06, 1.4, '#657365');
+  for (const x of [-28, 28]) world.box(roads, x, -.16, -9, 1.4, .06, 48, '#657365');
+  for (const d of departments) {
+    if (d.z === -42) world.box(roads, d.x, -.16, -34.5, 1.65, .06, 3, '#657365');
+    else world.box(roads, Math.sign(d.x) * 31, -.16, d.z + 7, 7, .06, 1.4, '#657365');
   }
-  for (const x of [-24, -12, 12, 24]) world.box(roads, x, -.16, 0, 1.15, .06, 29, '#657365');
-  for (const z of [16, 29, 42]) world.box(roads, 0, -.16, z, 60, .06, 1.4, '#657365');
-  for (const x of [-30, -18, -6, 6, 18, 30]) {
-    world.box(roads, x, -.16, 29, 1.15, .06, 26, '#657365');
+  world.box(roads, 0, -.16, -19.5, 1.8, .06, 27, '#657365');
+  for (const z of [20, 33, 46]) world.box(roads, 0, -.16, z, 80, .06, 1.4, '#657365');
+  for (const x of [-40, -24, -8, 8, 24, 40]) {
+    world.box(roads, x, -.16, 33, 1.15, .06, 26, '#657365');
   }
-  world.box(roads, 0, -.16, 14.2, 2, .06, 3.7, '#657365');
-  world.box(roads, 0, -.16, 43, 60, .06, 1, '#47584b');
+  world.box(roads, 0, -.16, 17.5, 2, .06, 5, '#657365');
+  world.box(roads, 0, -.16, 47, 80, .06, 1, '#47584b');
 
   // Keep collectible shards and sector NPCs beside the generator they belong to.
   for (let i = 0; i < world.shards.length; i++) {
@@ -121,20 +130,20 @@ export function applyPlots({ world, state, ui }, departments) {
   world.sync = () => { originalSync(); syncLots(); applyLayout(); };
   syncLots();
 
-  const districtSize = () => Math.max(64, 61 / (innerWidth / innerHeight));
+  const districtSize = () => Math.max(94, 100 / (innerWidth / innerHeight));
   const originalTeleport = world.teleport.bind(world);
   world.teleport = id => {
     originalTeleport(id);
     const generator = generatorLots.find(g => g.area === id);
     if (id === 'lab') {
-      world.goal.set(0, 0, 12);
+      world.goal.set(0, 0, -2);
       world.goalSize = districtSize();
     } else if (generator) {
       world.goal.copy(generator.machine.position);
       world.goalSize = 22;
     }
   };
-  world.goal.set(0, 0, 12);
+  world.goal.set(0, 0, -2);
   world.target.copy(world.goal);
   world.size = world.goalSize = districtSize();
   world.frame();
@@ -143,7 +152,7 @@ export function applyPlots({ world, state, ui }, departments) {
   const originalUpdate = world.update.bind(world);
   world.update = dt => {
     originalUpdate(dt);
-    world.goal.z = Math.max(-45, Math.min(48, world.goal.z));
+    world.goal.z = Math.max(-55, Math.min(48, world.goal.z));
   };
   world.lots = lots;
   world.generatorLots = generatorLots;
@@ -154,13 +163,13 @@ export function applyPlots({ world, state, ui }, departments) {
     const result = {};
     for (const d of departments) {
       const p = value?.[d.id];
-      if (Array.isArray(p) && p.length === 2 && p.every(Number.isFinite) && Math.abs(p[0]) <= 24 && p[1] >= -18 && p[1] <= 12) {
+      if (Array.isArray(p) && p.length === 2 && p.every(Number.isFinite) && permittedPosition(p[0], p[1])) {
         result[d.id] = p;
       }
     }
     const rectangles = departments.map(d => ({
       x: result[d.id]?.[0] ?? defaults.get(d.id)[0],
-      z: result[d.id]?.[1] ?? defaults.get(d.id)[1], width: 7.2, depth: 6.6
+      z: result[d.id]?.[1] ?? defaults.get(d.id)[1], width: 14, depth: 12
     }));
     rectangles.push({ x: 0, z: -2, width: 4.3, depth: 5.8 });
     for (let i = 0; i < rectangles.length; i++) for (let j = i + 1; j < rectangles.length; j++) {
@@ -227,11 +236,11 @@ export function applyPlots({ world, state, ui }, departments) {
   state.on((type, point) => {
     if (type !== 'groundclick' || !arranging || !selected || !point) return;
     const x = Math.round(point.x), z = Math.round(point.z);
-    if (Math.abs(x) > 24 || z < -18 || z > 12) { ui.notice('Keep departments inside the administration district.'); return; }
+    if (!permittedPosition(x, z)) { ui.notice('Place departments around the outer edge. Keep the reactor clearing open.'); return; }
     const blocked = lots.some(other => {
       if (other.parent === selected.group) return false;
       const p = other.parent.position;
-      return Math.abs(x - p.x) < (7.2 + other.width) / 2 + .6 && Math.abs(z - p.z) < (6.6 + other.depth) / 2 + .6;
+      return Math.abs(x - p.x) < (14 + other.width) / 2 + .6 && Math.abs(z - p.z) < (12 + other.depth) / 2 + .6;
     });
     if (blocked) { ui.notice('Leave room between this plot and its neighbours.'); return; }
     state.s.plotLayout ??= {};

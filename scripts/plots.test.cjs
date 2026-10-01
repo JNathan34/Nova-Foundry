@@ -54,7 +54,7 @@ const assert = require('node:assert/strict');
     assert.equal(await page.evaluate(() => __NOVA.world.generatorLots[1].record.action), 'machine');
     assert(await page.evaluate(() => __NOVA.world.generatorLots[1].machine.userData.built.visible));
     await page.evaluate(() => __NOVA.world.teleport('generator'));
-    assert.deepEqual(await page.evaluate(() => [__NOVA.world.goal.x, __NOVA.world.goal.z]), [-12, 22]);
+    assert.deepEqual(await page.evaluate(() => [__NOVA.world.goal.x, __NOVA.world.goal.z]), [-16, 26]);
     // Move the whole plot, save it, and verify export/import validation preserves it.
     await page.evaluate(async () => {
       const { ui, state, world } = __NOVA;
@@ -63,17 +63,17 @@ const assert = require('node:assert/strict');
       let record;
       d.parent.traverse(o => { record ||= o.userData?.interactable; });
       ui.interact(record);
-      state.emit('groundclick', { x: -24, z: -18 });
+      state.emit('groundclick', { x: -46, z: -22 });
       await ui.action({ action: 'plotdone' });
     });
-    assert.deepEqual(await page.evaluate(() => __NOVA.state.s.plotLayout.admin), [-24, -18]);
+    assert.deepEqual(await page.evaluate(() => __NOVA.state.s.plotLayout.admin), [-46, -22]);
     await page.reload();
     await page.waitForFunction(() => window.__NOVA?.world.lots);
-    assert.deepEqual(await page.evaluate(() => __NOVA.state.s.plotLayout.admin), [-24, -18]);
+    assert.deepEqual(await page.evaluate(() => __NOVA.state.s.plotLayout.admin), [-46, -22]);
     assert.deepEqual(await page.evaluate(() => {
       const g = __NOVA.world.lots.find(l => l.id === 'department-admin').parent;
       return [g.position.x, g.position.z];
-    }), [-24, -18]);
+    }), [-46, -22]);
     await page.locator('#enter').click();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.keyboard.press('Home');
